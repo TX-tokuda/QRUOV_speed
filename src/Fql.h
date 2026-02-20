@@ -51,6 +51,18 @@ inline Fq Fq_add(Fq a, Fq b, const QRUOV_params* para){
 }
 
 /**
+ * Fqの加算を行う関数の。
+ *
+ * @param[in]  a    任意のFq。
+ * @param[in]  b    任意のFq。
+ * @param[in]  para パラメータの構造体。
+ * @return          aとbの和であるようなFq。para->qで剰余されている。
+ */
+inline Fq Fq_add_op2(Fq a, Fq b, const QRUOV_params* para){
+  return (Fq)(((uint16_t)a + (uint16_t)b) % 31);
+}
+
+/**
  * Fqの減算を行う関数。
  *
  * @param[in]  a    任意のFq。
@@ -63,6 +75,18 @@ inline Fq Fq_sub(Fq a, Fq b, const QRUOV_params* para){
 }
 
 /**
+ * Fqの減算を行う関数。
+ *
+ * @param[in]  a    任意のFq。
+ * @param[in]  b    任意のFq。
+ * @param[in]  para パラメータの構造体。
+ * @return          aとbの差であるようなFq。para->qで剰余されている。
+ */
+inline Fq Fq_sub_op2(Fq a, Fq b, const QRUOV_params* para){
+  return (Fq)(((uint16_t)31 + (uint16_t)a - (uint16_t)b) % 31);
+}
+
+/**
  * Fqの乗算を行う関数。
  *
  * @param[in]  a    任意のFq。
@@ -72,6 +96,18 @@ inline Fq Fq_sub(Fq a, Fq b, const QRUOV_params* para){
  */
 inline Fq Fq_mul(Fq a, Fq b, const QRUOV_params* para){
   return (Fq)(((uint16_t)a * (uint16_t)b) % para->q);
+}
+
+/**
+ * Fqの乗算を行う関数。
+ *
+ * @param[in]  a    任意のFq。
+ * @param[in]  b    任意のFq。
+ * @param[in]  para パラメータの構造体。
+ * @return          aとbの積であるようなFq。para->qで剰余されている。
+ */
+inline Fq Fq_mul_op2(Fq a, Fq b, const QRUOV_params* para){
+  return (Fq)(((uint16_t)a * (uint16_t)b) % 31);
 }
 
 /**
@@ -132,6 +168,15 @@ void Fql_zero(Fq* r, const QRUOV_params* para);
 void Fql_copy(Fq* r, const Fq* a, const QRUOV_params* para);
 
 /**
+ * Fqlのコピーを行う関数。
+ *
+ * @param[out] r    aがコピーされたFql。
+ * @param[in]  a    任意のFql。
+ * @param[in]  para パラメータの構造体。
+ */
+void Fql_copy_op2(Fq* r, const Fq* a, const QRUOV_params* para);
+
+/**
  * Fqlの加算を行う関数。
  *
  * @param[out] r    aとbの和であるようなFql。各係数はpara->qで剰余されている。
@@ -140,6 +185,16 @@ void Fql_copy(Fq* r, const Fq* a, const QRUOV_params* para);
  * @param[in]  para パラメータの構造体。
  */
 void Fql_add(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para);
+
+/**
+ * Fqlの加算を行う関数。
+ *
+ * @param[out] r    aとbの和であるようなFql。各係数はpara->qで剰余されている。
+ * @param[in]  a    任意のFql。
+ * @param[in]  b    任意のFql。
+ * @param[in]  para パラメータの構造体。
+ */
+void Fql_add_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para);
 
 /**
  * Fqlの加算を行う関数のq=127における最適化関数。
@@ -161,6 +216,16 @@ void Fql_add_op(Fql* r, const Fql* a, const Fql* b);
 void Fql_sub(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para);
 
 /**
+ * Fqlの減算を行う関数。
+ *
+ * @param[out] r    aとbの差(a-b)であるようなFql。各係数はpara->qで剰余されている。
+ * @param[in]  a    任意のFql。
+ * @param[in]  b    任意のFql。
+ * @param[in]  para パラメータの構造体。
+ */
+void Fql_sub_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para);
+
+/**
  * Fqlの減算を行う関数のq=127における最適化関数。
  *
  * @param[out] r    aとbの差(a-b)であるようなFql。各係数は127で剰余されている。
@@ -178,6 +243,16 @@ void Fql_sub_op(Fql* r, const Fql* a, const Fql* b);
  * @param[in]  para パラメータの構造体。
  */
 void Fql_mul(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para);
+
+/**
+ * Fqlの乗算を行う関数。
+ *
+ * @param[out] r    aとbの積であるようなFql_accumulator。各係数はpara->qで剰余されている。
+ * @param[in]  a    任意のFql。
+ * @param[in]  b    任意のFql。
+ * @param[in]  para パラメータの構造体。
+ */
+void Fql_mul_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para);
 
 /**
  * Fqlの乗算と加算を行う関数のq=127における最適化関数。
@@ -267,6 +342,16 @@ void Fql_accumulator_zero(Fq* r, const QRUOV_params* para);
 void Fql_accumulator_add(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para);
 
 /**
+ * Fql_accumulatorの加算を行う関数。
+ *
+ * @param[out] r    aとbの和であるようなFql_accumulator。各係数はpara->qで剰余されている。
+ * @param[in]  a    任意のFql_accumulator。
+ * @param[in]  b    任意のFql_accumulator。
+ * @param[in]  para パラメータの構造体。
+ */
+void Fql_accumulator_add_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para);
+
+/**
  * Fql_accumulatorのコピーを行う関数。
  *
  * @param[out] r    aがコピーされたFql_accumulator。
@@ -284,6 +369,16 @@ void Fql_accumulator_copy(Fq* r, const Fq* a, const QRUOV_params* para);
  * @return          0:成功。-1以下:エラー。
  */
 int Fql_accumulator_reduce(Fq* r, const Fq* a, const QRUOV_params* para);
+
+/**
+ * Fql_accumulatorの剰余を行う関数。
+ *
+ * @param[out] r    既約多項式により剰余されたFql。各係数はpara->qで剰余されている。
+ * @param[in]  a    任意のFql_accumulator。
+ * @param[in]  para パラメータの構造体。
+ * @return          0:成功。-1以下:エラー。
+ */
+int Fql_accumulator_reduce_op2(Fq* r, const Fq* a, const QRUOV_params* para);
 
 /**
  * Fqlの係数を得る関数。

@@ -11,6 +11,48 @@
 #include "parameter.h"
 #include "qruov.h"
 
+//TX add
+void print_QRUOV_params(const QRUOV_params* params) {
+    if (params == NULL) {
+        printf("params is NULL\n");
+        return;
+    }
+
+    printf("QRUOV_params:\n");
+    printf("  parameter = %d\n", params->parameter);
+    printf("  SL = %d\n", params->SL);
+    printf("  q = %d\n", params->q);
+    printf("  v = %d\n", params->v);
+    printf("  m = %d\n", params->m);
+    printf("  l = %d\n", params->l);
+    printf("  tau_lVM = %d\n", params->tau_lVM);
+    printf("  tau_lVV12 = %d\n", params->tau_lVV12);
+    printf("  tau_lV = %d\n", params->tau_lV);
+    printf("  tau_m = %d\n", params->tau_m);
+    printf("  lambda = %d\n", params->lambda);
+    printf("  q_bitlen = %d\n", params->q_bitlen);
+    printf("  Fq_inv_table = %p\n", (const void*)params->Fq_inv_table);
+    printf("  n = %d\n", params->n);
+    printf("  V = %d\n", params->V);
+    printf("  M = %d\n", params->M);
+    printf("  N = %d\n", params->N);
+    printf("  Fql_degree = %d\n", params->Fql_degree);
+    printf("  Fql_accumulator_degree = %d\n", params->Fql_accumulator_degree);
+    printf("  seed_len = %d\n", params->seed_len);
+    printf("  salt_len = %d\n", params->salt_len);
+    printf("  f_c = %d\n", params->f_c);
+    printf("  f_e = %d\n", params->f_e);
+    printf("  f_c0 = %d\n", params->f_c0);
+    printf("  sk_len = %zu\n", params->sk_len);
+    printf("  pk_len = %zu\n", params->pk_len);
+    printf("  sigma_len = %zu\n", params->sigma_len);
+    printf("  prg_shake = %d\n", params->prg_shake);
+    printf("  prg_ctx = %p\n", params->prg_ctx);
+    printf("  SHAKE_len = %d\n", params->SHAKE_len);
+    printf("  AES_len = %d\n", params->AES_len);
+}
+//TX add
+
 int main(){
 
   int ret = 0;
@@ -19,13 +61,13 @@ int main(){
   QRUOV_params para;
 
   //--- 試験範囲 ---//
-  ret = QRUOV_paramgen("qruov1q127L3v156m54", "SHAKE", &para);
+  //ret = QRUOV_paramgen("qruov1q127L3v156m54", "SHAKE", &para);
   //ret = QRUOV_paramgen("qruov3q127L3v228m78", "SHAKE", &para);
   //ret = QRUOV_paramgen("qruov1q127L3v156m54", "AES", &para);
   //ret = QRUOV_paramgen("qruov3q127L3v228m78", "AES", &para);
 
   //--- 試験範囲外 ---//
-  //ret = QRUOV_paramgen("qruov1q31L3v165m60", "SHAKE", &para);
+  ret = QRUOV_paramgen("qruov1q31L3v165m60", "SHAKE", &para);
   //ret = QRUOV_paramgen("qruov1q31L10v600m70", "SHAKE", &para);
   //ret = QRUOV_paramgen("qruov1q7L10v740m100", "SHAKE", &para);
   //ret = QRUOV_paramgen("qruov1q31L3v165m60", "AES", &para);
@@ -49,6 +91,8 @@ int main(){
   //ret = QRUOV_paramgen("qruov5q7L10v1490m190", "AES", &para);
 
   if (ret!=0) printf("QRUOV_paramgen returned %d.\n", ret);
+
+  //print_QRUOV_params(&para);
 
   // keygen
   size_t pklen = para.pk_len;

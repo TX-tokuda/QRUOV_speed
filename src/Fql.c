@@ -60,10 +60,28 @@ void Fql_copy(Fq* r, const Fq* a, const QRUOV_params* para){
   return;
 }
 
+void Fql_copy_op2(Fq* r, const Fq* a, const QRUOV_params* para){
+
+  for (int i=0; i<3; i++){
+    r[i] = a[i];
+  }
+
+  return;
+}
+
 void Fql_add(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
 
   for (int i=0; i<(para->Fql_degree+1); i++){
     r[i] = Fq_add(a[i], b[i], para);
+  }
+
+  return;
+}
+
+void Fql_add_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
+
+  for (int i=0; i<(para->Fql_degree+1); i++){
+    r[i] = Fq_add_op2(a[i], b[i], para);
   }
 
   return;
@@ -91,6 +109,15 @@ void Fql_sub(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
   return;
 }
 
+void Fql_sub_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
+
+  for (int i=0; i<(para->Fql_degree+1); i++){
+    r[i] = Fq_sub_op2(a[i], b[i], para);
+  }
+
+  return;
+}
+
 void Fql_sub_op(Fql* r, const Fql* a, const Fql* b){
 
   // 差が0の時にも正しくmod127が行われるように、128を足しておく
@@ -111,6 +138,19 @@ void Fql_mul(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
   for (int i=0; i<(para->Fql_degree+1); i++){
     for (int j=0; j<(para->Fql_degree+1); j++){
       r[i+j] = Fq_add(r[i+j], Fq_mul(a[i], b[j], para), para);
+    }
+  }
+
+  return;
+}
+
+void Fql_mul_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
+
+  Fql_accumulator_zero(r, para);
+
+  for (int i=0; i<3; i++){
+    for (int j=0; j<3; j++){
+      r[i+j] = Fq_add_op2(r[i+j], Fq_mul_op2(a[i], b[j], para), para);
     }
   }
 
@@ -185,6 +225,15 @@ void Fql_accumulator_add(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* pa
   return;
 }
 
+void Fql_accumulator_add_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
+
+  for (int i=0; i< 5; i++){
+    r[i] = Fq_add_op2(a[i], b[i], para);
+  }
+
+  return;
+}
+
 void Fql_accumulator_copy(Fq* r, const Fq* a, const QRUOV_params* para){
 
   for (int i=0; i<(para->Fql_accumulator_degree+1); i++){
@@ -216,6 +265,36 @@ int Fql_accumulator_reduce(Fq* r, const Fq* a, const QRUOV_params* para){
 
   for(int i=0; i<(para->Fql_degree+1); i++){
     r[i] = tmp[i] % para->q;
+  }
+
+  free(tmp);
+  tmp = NULL;
+
+  return 0;
+}
+
+int Fql_accumulator_reduce_op2(Fq* r, const Fq* a, const QRUOV_params* para){
+
+  int* tmp = NULL;
+  tmp = (int*)malloc(sizeof(int) * (para->Fql_accumulator_degree+1));
+  if (tmp == NULL){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_accumulator_reduce] malloc failed.\n");
+#endif
+    return -1;
+  }
+
+  for (int i=0; i<5; i++){
+    tmp[i] = a[i];
+  }
+
+  for (int i=4; i >= 3; i--){
+    tmp[i - 3] += tmp[i];
+    tmp[i - 2] += tmp[i];
+  }
+
+  for(int i=0; i<(3); i++){
+    r[i] = tmp[i] % 31;
   }
 
   free(tmp);

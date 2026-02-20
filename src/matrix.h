@@ -79,6 +79,17 @@ int Fq_matrix_add(FQ_MATRIX* R, const FQ_MATRIX* A, const FQ_MATRIX* B, const QR
 int Fq_matrix_sub(FQ_MATRIX* R, const FQ_MATRIX* A, const FQ_MATRIX* B, const QRUOV_params* para);
 
 /**
+ * Fqの行列の減算を行う関数。
+ *
+ * @param[out] R    AとBの差であるようなFqの行列。各Fqはpara->qで剰余されている。
+ * @param[in]  A    任意のFqの行列。
+ * @param[in]  B    任意のFqの行列。
+ * @param[in]  para パラメータの構造体。
+ * @return          0:成功。-1以下:エラー。
+ */
+int Fq_matrix_sub_op2(FQ_MATRIX* R, const FQ_MATRIX* A, const FQ_MATRIX* B, const QRUOV_params* para);
+
+/**
  * Fqの行列の乗算を行う関数。
  *
  * @param[out] R    AとBの積であるようなFqの行列。各Fqはpara->qで剰余されている。
@@ -204,6 +215,16 @@ void Fql_matrix_transpose_op(FQL_MATRIX_OP* R);
 int Fql_matrix_copy(FQL_MATRIX* R, const FQL_MATRIX* A, const QRUOV_params* para);
 
 /**
+ * Fqlの行列をコピーする関数。
+ *
+ * @param[out] R    AがコピーされたFqlの行列。
+ * @param[in]  A    任意のFqlの行列。
+ * @param[in]  para パラメータの構造体。
+ * @return          0:成功。-1以下:エラー。
+ */
+int Fql_matrix_copy_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const QRUOV_params* para);
+
+/**
  * Fqlの行列をコピーする関数のq=127における最適化関数。
  *
  * @param[out] R    AがコピーされたFqlの行列。
@@ -225,6 +246,18 @@ int Fql_matrix_add(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
                    const QRUOV_params* para);
 
 /**
+ * Fqlの行列の加算を行う関数。
+ *
+ * @param[out] R    AとBの和であるようなFqlの行列。Fqlの各係数はpara->qで剰余されている。
+ * @param[in]  A    任意のFqlの行列。
+ * @param[in]  B    任意のFqlの行列。
+ * @param[in]  para パラメータの構造体。
+ * @return          0:成功。-1以下:エラー。
+ */
+int Fql_matrix_add_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
+                   const QRUOV_params* para);
+
+/**
  * Fqlの行列の加算を行う関数のq=127における最適化関数。
  *
  * @param[out] R    AとBの和であるようなFqlの行列。Fqlの各係数はpara->qで剰余されている。
@@ -235,7 +268,7 @@ int Fql_matrix_add(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
  */
 int Fql_matrix_add_op(FQL_MATRIX_OP* R, const FQL_MATRIX_OP* A, const FQL_MATRIX_OP* B,
                       const QRUOV_params* para);
-                   
+
 /**
  * Fqlの行列の減算を行う関数。
  *
@@ -246,6 +279,18 @@ int Fql_matrix_add_op(FQL_MATRIX_OP* R, const FQL_MATRIX_OP* A, const FQL_MATRIX
  * @return          0:成功。-1以下:エラー。
  */
 int Fql_matrix_sub(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
+                   const QRUOV_params* para);
+
+/**
+ * Fqlの行列の減算を行う関数。
+ *
+ * @param[out] R    AとBの差(A-B)であるようなFqlの行列。Fqlの各係数はpara->qで剰余されている。
+ * @param[in]  A    任意のFqlの行列。
+ * @param[in]  B    任意のFqlの行列。
+ * @param[in]  para パラメータの構造体。
+ * @return          0:成功。-1以下:エラー。
+ */
+int Fql_matrix_sub_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
                    const QRUOV_params* para);
 
 /**
@@ -271,6 +316,19 @@ int Fql_matrix_sub_op(FQL_MATRIX_OP* R, const FQL_MATRIX_OP* A, const FQL_MATRIX
  * @return          0:成功。-1以下:エラー。
  */
 int Fql_matrix_mul(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
+                   const QRUOV_params* para);
+
+/**
+ * Fqlの行列の乗算を行う関数のparameter==2における最適化関数。
+ *
+ * @param[out] R    AとBの積であるようなFqlの行列。Fqlの各係数はpara->qで剰余されている。
+ *                  A,Bとは別の行列を指定すること。
+ * @param[in]  A    任意のFqlの行列。
+ * @param[in]  B    任意のFqlの行列。
+ * @param[in]  para パラメータの構造体。
+ * @return          0:成功。-1以下:エラー。
+ */
+int Fql_matrix_mul_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
                    const QRUOV_params* para);
 
 /**
@@ -301,6 +359,20 @@ int Fql_matrix_mul_add(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
                        const FQL_MATRIX* C, const QRUOV_params* para);
 
 /**
+ * Fqlの行列の乗算と加算を行う関数。
+ *
+ * @param[out] R    AとBの積にCを加算したFqlの行列。Fqlの各係数はpara->qで剰余されている。
+ *                  A,Bとは別の行列を指定すること。
+ * @param[in]  A    任意のFqlの行列。
+ * @param[in]  B    任意のFqlの行列。
+ * @param[in]  C    任意のFqlの行列。
+ * @param[in]  para パラメータの構造体。
+ * @return          0:成功。-1以下:エラー。
+ */
+int Fql_matrix_mul_add_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
+                       const FQL_MATRIX* C, const QRUOV_params* para);
+
+/**
  * Fqlの行列の乗算と加算を行う関数のq=127における最適化関数。
  *
  * @param[out] R    AとBの積にCを加算したFqlの行列。Fqlの各係数はpara->qで剰余されている。
@@ -323,5 +395,15 @@ int Fql_matrix_mul_add_op(FQL_MATRIX_OP* R, const FQL_MATRIX_OP* A, const FQL_MA
  * @return              0:成功。-1以下:エラー。
  */
 int Fql_index_permute(int* index_a, const int index_aW, const QRUOV_params* para);
+
+/**
+ * Fql*Wを計算したとき、計算結果のFqlの項が元のFqlのどの項だったのかを出力する関数。
+ *
+ * @param[out] index_a  index_aWのaにおける項の次数。
+ * @param[in]  index_aW a*WをあらわすFqlの任意の項の次数。
+ * @param[in]  para     パラメータの構造体。
+ * @return              0:成功。-1以下:エラー。
+ */
+int Fql_index_permute_op2(int* index_a, const int index_aW, const QRUOV_params* para);
 
 #endif /* MATRIX_H_INCLUDED */
