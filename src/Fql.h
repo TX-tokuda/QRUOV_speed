@@ -187,6 +187,15 @@ void Fql_copy_op2(Fq* r, const Fq* a, const QRUOV_params* para);
 void Fql_add(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para);
 
 /**
+ * Fqlの加算を行う関数のq=127における最適化関数。
+ *
+ * @param[out] r    aとbの和であるようなFql。各係数は127で剰余されている。
+ * @param[in]  a    任意のFql。
+ * @param[in]  b    任意のFql。
+ */
+void Fql_add_op(Fql* r, const Fql* a, const Fql* b);
+
+/**
  * Fqlの加算を行う関数。
  *
  * @param[out] r    aとbの和であるようなFql。各係数はpara->qで剰余されている。
@@ -195,15 +204,6 @@ void Fql_add(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para);
  * @param[in]  para パラメータの構造体。
  */
 void Fql_add_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para);
-
-/**
- * Fqlの加算を行う関数のq=127における最適化関数。
- *
- * @param[out] r    aとbの和であるようなFql。各係数は127で剰余されている。
- * @param[in]  a    任意のFql。
- * @param[in]  b    任意のFql。
- */
-void Fql_add_op(Fql* r, const Fql* a, const Fql* b);
 
 /**
  * Fqlの減算を行う関数。
@@ -216,6 +216,15 @@ void Fql_add_op(Fql* r, const Fql* a, const Fql* b);
 void Fql_sub(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para);
 
 /**
+ * Fqlの減算を行う関数のq=127における最適化関数。
+ *
+ * @param[out] r    aとbの差(a-b)であるようなFql。各係数は127で剰余されている。
+ * @param[in]  a    任意のFql。
+ * @param[in]  b    任意のFql。
+ */
+void Fql_sub_op(Fql* r, const Fql* a, const Fql* b);
+
+/**
  * Fqlの減算を行う関数。
  *
  * @param[out] r    aとbの差(a-b)であるようなFql。各係数はpara->qで剰余されている。
@@ -224,15 +233,6 @@ void Fql_sub(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para);
  * @param[in]  para パラメータの構造体。
  */
 void Fql_sub_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para);
-
-/**
- * Fqlの減算を行う関数のq=127における最適化関数。
- *
- * @param[out] r    aとbの差(a-b)であるようなFql。各係数は127で剰余されている。
- * @param[in]  a    任意のFql。
- * @param[in]  b    任意のFql。
- */
-void Fql_sub_op(Fql* r, const Fql* a, const Fql* b);
 
 /**
  * Fqlの乗算を行う関数。

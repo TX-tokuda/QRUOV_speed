@@ -71,22 +71,6 @@ int compute_Li_ui(FQ_MATRIX* Li, FQ_MATRIX* ui, const FQL_MATRIX* P1i,
                   const QRUOV_params* para);
 
 /**
- * L_iとu_iを計算する関数。
- *
- * @param[out] Li    Fqのpara->m*1行列。
- * @param[out] ui    Fqの1*1行列。
- * @param[in]  P1i   FQLのpara->V*para->V行列。
- * @param[in]  P2Ti  FQLのpara->V*para->M行列。
- * @param[in]  SdT   FQLのpara->V*para->M行列。
- * @param[in]  y     FQLのpara->V*1行列。
- * @param[in]  para  パラメータの構造体。
- * @return           0:成功。-1以下:エラー。
- */
-int compute_Li_ui_op2(FQ_MATRIX* Li, FQ_MATRIX* ui, const FQL_MATRIX* P1i, 
-                  const FQL_MATRIX* P2Ti, const FQL_MATRIX* SdT, const FQL_MATRIX* y,
-                  const QRUOV_params* para);
-
-/**
  * L_iとu_iを計算する関数のq=127における最適化関数。
  *
  * @param[out] Li    Fqのpara->m*1行列。
@@ -103,6 +87,22 @@ int compute_Li_ui_op(FQ_MATRIX* Li, FQ_MATRIX* ui, const FQL_MATRIX_OP* P1i,
                      const QRUOV_params* para);
 
 /**
+ * L_iとu_iを計算する関数のparameter==2における最適化関数。
+ *
+ * @param[out] Li    Fqのpara->m*1行列。
+ * @param[out] ui    Fqの1*1行列。
+ * @param[in]  P1i   FQLのpara->V*para->V行列。
+ * @param[in]  P2Ti  FQLのpara->V*para->M行列。
+ * @param[in]  SdT   FQLのpara->V*para->M行列。
+ * @param[in]  y     FQLのpara->V*1行列。
+ * @param[in]  para  パラメータの構造体。
+ * @return           0:成功。-1以下:エラー。
+ */
+int compute_Li_ui_op2(FQ_MATRIX* Li, FQ_MATRIX* ui, const FQL_MATRIX* P1i, 
+                  const FQL_MATRIX* P2Ti, const FQL_MATRIX* SdT, const FQL_MATRIX* y,
+                  const QRUOV_params* para);
+                                      
+/**
  * sを計算する関数。
  *
  * @param[out] s    Fqlのpara->N*1行列。
@@ -115,18 +115,6 @@ int compute_Li_ui_op(FQ_MATRIX* Li, FQ_MATRIX* ui, const FQL_MATRIX_OP* P1i,
 int compute_s(FQL_MATRIX* s, const FQL_MATRIX* y, const FQL_MATRIX* x, const FQL_MATRIX* Sd,
               const QRUOV_params* para);
 
-/**
- * sを計算する関数。
- *
- * @param[out] s    Fqlのpara->N*1行列。
- * @param[in]  y    Fqlのpara->V*1行列。
- * @param[in]  x    Fqlのpara->M*1行列。
- * @param[in]  Sd   Fqlのpara->V*para->M行列。
- * @param[in]  para パラメータの構造体。
- * @return          0:成功。-1以下:エラー。
- */
-int compute_s_op2(FQL_MATRIX* s, const FQL_MATRIX* y, const FQL_MATRIX* x, const FQL_MATRIX* Sd,
-              const QRUOV_params* para);
 
 /**
  * sを計算する関数のq=127における最適化関数。
@@ -142,6 +130,19 @@ int compute_s_op(FQL_MATRIX_OP* s, const FQL_MATRIX_OP* y, const FQL_MATRIX_OP* 
                  const FQL_MATRIX_OP* Sd, const QRUOV_params* para);
 
 /**
+ * sを計算する関数のparameter==2における最適化関数。
+ *
+ * @param[out] s    Fqlのpara->N*1行列。
+ * @param[in]  y    Fqlのpara->V*1行列。
+ * @param[in]  x    Fqlのpara->M*1行列。
+ * @param[in]  Sd   Fqlのpara->V*para->M行列。
+ * @param[in]  para パラメータの構造体。
+ * @return          0:成功。-1以下:エラー。
+ */
+int compute_s_op2(FQL_MATRIX* s, const FQL_MATRIX* y, const FQL_MATRIX* x, const FQL_MATRIX* Sd,
+              const QRUOV_params* para);
+
+/**
  * tdを計算する関数。
  *
  * @param[out] td        Fqのpara->m*1行列。
@@ -155,19 +156,6 @@ int compute_s_op(FQL_MATRIX_OP* s, const FQL_MATRIX_OP* y, const FQL_MATRIX_OP* 
 int compute_td(FQ_MATRIX* td, const FQL_MATRIX* s, const FQL_MATRIX* P1,
                const FQL_MATRIX* P2T, const FQL_MATRIX* P3, const QRUOV_params* para); 
 
-/**
- * tdを計算する関数。
- *
- * @param[out] td        Fqのpara->m*1行列。
- * @param[in]  s         Fqlのpara->N*1行列。
- * @param[in]  P1        Fqlのpara->V*para->V対称行列のpara->m個の配列。
- * @param[in]  P2T       Fqlのpara->M*para->V行列のpara->m個の配列。
- * @param[in]  P3        Fqlのpara->M*para->M対称行列のpara->m個の配列。
- * @param[in]  para      パラメータの構造体。
- * @return               0:成功。-1以下:エラー。
- */
-int compute_td_op2(FQ_MATRIX* td, const FQL_MATRIX* s, const FQL_MATRIX* P1,
-               const FQL_MATRIX* P2T, const FQL_MATRIX* P3, const QRUOV_params* para); 
 
 /**
  * tdを計算する関数のq=127における最適化関数。
@@ -182,6 +170,20 @@ int compute_td_op2(FQ_MATRIX* td, const FQL_MATRIX* s, const FQL_MATRIX* P1,
  */
 int compute_td_op(FQ_MATRIX* td, const FQL_MATRIX_OP* s, const FQL_MATRIX_OP* P1,
                   const FQL_MATRIX_OP* P2T, const FQL_MATRIX_OP* P3, const QRUOV_params* para); 
+
+/**
+ * tdを計算する関数のparameter==2における最適化関数。
+ *
+ * @param[out] td        Fqのpara->m*1行列。
+ * @param[in]  s         Fqlのpara->N*1行列。
+ * @param[in]  P1        Fqlのpara->V*para->V対称行列のpara->m個の配列。
+ * @param[in]  P2T       Fqlのpara->M*para->V行列のpara->m個の配列。
+ * @param[in]  P3        Fqlのpara->M*para->M対称行列のpara->m個の配列。
+ * @param[in]  para      パラメータの構造体。
+ * @return               0:成功。-1以下:エラー。
+ */
+int compute_td_op2(FQ_MATRIX* td, const FQL_MATRIX* s, const FQL_MATRIX* P1,
+               const FQL_MATRIX* P2T, const FQL_MATRIX* P3, const QRUOV_params* para); 
 
 /**
  * PAをLUに分解する関数。
@@ -199,7 +201,7 @@ int LU_decompose(int* P, FQ_MATRIX* L, FQ_MATRIX* U, int* rank, int* first_col_i
                  FQ_MATRIX* A_org, const QRUOV_params* para);
 
 /**
- * PAをLUに分解する関数。
+ * PAをLUに分解する関数のparameter==2における最適化関数。
  *
  * @param[out] P                置換配列。intのpara->m個の配列。
  * @param[out] L                Fqのpara->m*para->mの下三角行列。
@@ -237,7 +239,7 @@ int row_swap(FQ_MATRIX* A, int* P, const int i_row, const int j_row, const QRUOV
 int L_inverse(FQ_MATRIX* L_inv, const FQ_MATRIX* L, const int rank, const QRUOV_params* para);
 
 /**
- * Lの逆行列を計算する関数。
+ * Lの逆行列を計算する関数のparameter==2における最適化関数。
  *
  * @param[out] L_inv Lの逆行列。Fqのpara->m*para->m行列。
  * @param[in]  L     Fqのpara->m*para->mの下三角行列。
@@ -265,7 +267,7 @@ int consistent(int* result, FQ_MATRIX* L_inv, int* has_L_inv, const int* P, cons
                const int rank, const FQ_MATRIX* B, const QRUOV_params* para);
 
 /**
- * Ax=bが解を持つか判定する関数。（PA=LUに分解される）
+ * Ax=bが解を持つか判定する関数のparameter==2における最適化関数。（PA=LUに分解される）
  * has_L_invが1でない場合、Lの逆行列の計算を行いhas_L_invに1を設定する。
  *
  * @param[out]    result    解を持つ場合1、解を持たない場合0。
@@ -300,7 +302,7 @@ int sample_a_solution(FQ_MATRIX* X, const int* P, const FQ_MATRIX* L, const FQ_M
                       const unsigned char* x_seed, const QRUOV_params* para);
 
 /**
- * Ax=bの解を求める関数。（PA=LUに分解される）
+ * Ax=bの解を求める関数のparameter==2における最適化関数。（PA=LUに分解される）
  *
  * @param[out]    X               解の配列をデータにもつFqのpara->m*1行列。
  * @param[in]     P               置換配列。

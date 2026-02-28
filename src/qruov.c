@@ -653,8 +653,6 @@ int QRUOV_keygen_op2(unsigned char* pk, size_t* pklen, unsigned char* sk,
   *sklen = para->sk_len;
   *pklen = para->pk_len;
 
-  fprintf(stderr, "keygen_op2\n");
-
 end:
   // free
   for (int i=0; i<para->m; i++){
@@ -1058,8 +1056,6 @@ int QRUOV_sign_op2(unsigned char* sk, size_t sklen, unsigned char* sig,
   memcpy(sig, tmp_sig, para->sigma_len);
   *siglen = para->sigma_len;
 
-  fprintf(stderr, "sign__op2\n");
-
 end:
   // free
   Fql_matrix_clear(&s, para);
@@ -1407,8 +1403,6 @@ int QRUOV_verify_op2(unsigned char* pk, size_t pklen, unsigned char* sig,
   }else{
     ret_code = ret;
   }
-
-  fprintf(stderr, "verify_op2\n");
 
 end:
   // free

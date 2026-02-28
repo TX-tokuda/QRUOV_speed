@@ -128,7 +128,7 @@ int compute_P1_P2T_L_u(FQL_MATRIX* P1, FQL_MATRIX* P2T, FQ_MATRIX* L, FQ_MATRIX*
                        QRUOV_params* para);
 
 /**
- * P1, P2T, L, uを生成する関数。
+ * P1, P2T, L, uを生成する関数のparameter==2における最適化関数。
  *
  * @param[out] P1      Fqlのpara->V*para->V対称行列のpara->m個の配列。
  * @param[out] P2T     Fqlのpara->V*para->M行列の転置行列のpara->m個の配列。
@@ -243,7 +243,7 @@ int keygen_op(FQL_MATRIX_OP* P3, const unsigned char* sk_seed, const unsigned ch
               QRUOV_params* para);
 
 /**
- * QR-UOVの鍵生成を行う関数のparameter = 2における最適化関数。
+ * QR-UOVの鍵生成を行う関数のparameter==2における最適化関数。
  *
  * @param[out] P3      Fqlのpara->M*para->M対称行列のpara->m個の配列。
  * @param[in]  sk_seed 秘密鍵のシード。サイズはpara->seed_len-Byte。
@@ -294,7 +294,7 @@ int sign_op(unsigned char* r, FQL_MATRIX_OP* s, const unsigned char* M,
             const unsigned char* y_seed, const unsigned char* x_seed, QRUOV_params* para);
 
 /**
- * QR-UOVの署名生成を行う関数のparameter = 2における最適化関数。
+ * QR-UOVの署名生成を行う関数のparameter==2における最適化関数。
  *
  * @param[out] r       ランダムソルト。サイズはpara->salt_len-Byte。
  * @param[out] s       Fqlのpara->N*1行列。
@@ -344,7 +344,7 @@ int verify_op(const unsigned char* M, const unsigned long long Mlen, const unsig
               QRUOV_params* para);
 
 /**
- * QR-UOVの署名検証を行う関数のparameter-"における最適化関数。
+ * QR-UOVの署名検証を行う関数のparameter==2"における最適化関数。
  *
  * @param[in] M       メッセージ。
  * @param[in] Mlen    メッセージのサイズ(Byte)。

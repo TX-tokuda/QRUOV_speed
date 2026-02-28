@@ -78,15 +78,6 @@ void Fql_add(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
   return;
 }
 
-void Fql_add_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
-
-  for (int i=0; i<(para->Fql_degree+1); i++){
-    r[i] = Fq_add_op2(a[i], b[i], para);
-  }
-
-  return;
-}
-
 void Fql_add_op(Fql* r, const Fql* a, const Fql* b){
 
   // 和が127の時にも正しくmod127が行われるように、1を足しておく
@@ -100,19 +91,19 @@ void Fql_add_op(Fql* r, const Fql* a, const Fql* b){
   return;
 }
 
-void Fql_sub(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
+void Fql_add_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
 
   for (int i=0; i<(para->Fql_degree+1); i++){
-    r[i] = Fq_sub(a[i], b[i], para);
+    r[i] = Fq_add_op2(a[i], b[i], para);
   }
 
   return;
 }
 
-void Fql_sub_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
+void Fql_sub(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
 
   for (int i=0; i<(para->Fql_degree+1); i++){
-    r[i] = Fq_sub_op2(a[i], b[i], para);
+    r[i] = Fq_sub(a[i], b[i], para);
   }
 
   return;
@@ -127,6 +118,15 @@ void Fql_sub_op(Fql* r, const Fql* a, const Fql* b){
        +  (t & 0x007f007f007f007f)
        - 0x0001000100010001;
   t = 0;
+
+  return;
+}
+
+void Fql_sub_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
+
+  for (int i=0; i<(para->Fql_degree+1); i++){
+    r[i] = Fq_sub_op2(a[i], b[i], para);
+  }
 
   return;
 }

@@ -385,133 +385,6 @@ end:
   return ret_code;
 }
 
-int compute_Li_ui_op2(FQ_MATRIX* Li, FQ_MATRIX* ui, const FQL_MATRIX* Pi1, const FQL_MATRIX* Pi2T,
-                  const FQL_MATRIX* SdT, const FQL_MATRIX* y, const QRUOV_params* para){
-
-  int ret_code, ret = 0;
-
-  FQL_MATRIX Pi1_y = {.data = NULL};
-  FQL_MATRIX yT = {.data = NULL};
-  FQL_MATRIX Pi2T_y = {.data = NULL};
-  FQL_MATRIX SdT_Pi1_y = {.data = NULL};
-  FQL_MATRIX Sub = {.data = NULL};
-  FQL_MATRIX Li_Fql = {.data = NULL};
-  FQL_MATRIX u_Fql = {.data = NULL};
-
-  ret = Fql_matrix_init(&Pi1_y, para->V, 1, 0, 0, para);
-  if(ret!=0){ ret_code = ret-0; goto end; }
-  Fql_matrix_clear(&Pi1_y, para);
-
-  ret = Fql_matrix_init(&yT, 1, para->V, 0, 0, para);
-  if(ret!=0){ ret_code = ret-10; goto end; }
-  Fql_matrix_clear(&yT, para);
-  for(int i=0; i<y->size; i++){
-    Fql_copy(yT.data[i], y->data[i], para);
-  }
-
-  ret = Fql_matrix_init(&Pi2T_y, para->M, 1, 0, 0, para);
-  if(ret!=0){ ret_code = ret-20; goto end; }
-  Fql_matrix_clear(&Pi2T_y, para);
-
-  ret = Fql_matrix_init(&SdT_Pi1_y, para->M, 1, 0, 0, para);
-  if(ret!=0){ ret_code = ret-30; goto end; }
-  Fql_matrix_clear(&SdT_Pi1_y, para);
-
-  ret = Fql_matrix_init(&Sub, para->M, 1, 0, 0, para);
-  if(ret!=0){ ret_code = ret-40; goto end; }
-  Fql_matrix_clear(&Sub, para);
-
-  ret = Fql_matrix_init(&Li_Fql, para->M, 1, 0, 0, para);
-  if(ret!=0){ ret_code = ret-50; goto end; }
-  Fql_matrix_clear(&Li_Fql, para);
-
-  ret = Fql_matrix_init(&u_Fql, 1, 1, 0, 0, para);
-  if(ret!=0){ ret_code = ret-60; goto end; }
-  Fql_matrix_clear(&u_Fql, para);
-
-  // compute
-  ret = Fql_matrix_mul_op2(&Pi1_y, Pi1, y, para); // Pi1_y := Pi1 * y
-  if(ret!=0){ ret_code = ret-70; goto end; }
-
-  ret = Fql_matrix_mul_op2(&u_Fql, &yT, &Pi1_y, para); // u_Fql := yT * Pi1_y
-  if(ret!=0){ ret_code = ret-110; goto end; }
-
-  // u: Fql -> Fq
-  // ui     FQ_MATRIX: 1 * 1
-  int coeff_index_perm_0 = 0;
-  ret = Fql_index_permute_op2(&coeff_index_perm_0, 0, para);
-  if(ret!=0){ ret_code = ret-150; goto end; }
-
-  Fql2Fq(&ui->data[0], u_Fql.data[0], coeff_index_perm_0, para);
-
-  ret = Fql_matrix_mul_op2(&Pi2T_y, Pi2T, y, para); // Pi2T_y := Pi2T * y
-  if(ret!=0){ ret_code = ret-160; goto end; }
-
-  // SdT_Pi1_y := S'T * PiT1 * y (Pi1T=Pi1 (P1 is symmetric) )
-  ret = Fql_matrix_mul_op2(&SdT_Pi1_y, SdT, &Pi1_y, para);
-  if(ret!=0){ ret_code = ret-200; goto end; }
-
-  ret = Fql_matrix_sub_op2(&Sub, &Pi2T_y, &SdT_Pi1_y, para); // Sub := Pi2T*y - Sd'T*Pi1T*y
-  if(ret!=0){ ret_code = ret-240; goto end; }
-
-  ret = Fql_matrix_add_op2(&Li_Fql, &Sub, &Sub, para); // Li_Fql = 2 * Sub
-  if(ret!=0){ ret_code = ret-250; goto end; }
-
-  // L: Fql -> Fq
-  int j = 0;
-  int k = 0;
-  int coeff_index_perm_k = 0;
-
-#ifdef QRUOV_USE_MULTI_THREAD
-  #pragma omp parallel for private(j, k, coeff_index_perm_k) shared(Li, Li_Fql, ret_code, para)
-#endif
-for(j=0; j<para->M; j++){
-    for(k=0; k<para->l; k++){
-
-      int ret1 = Fql_index_permute_op2(&coeff_index_perm_k, k, para);
-      if (ret1!=0){
-        ret_code = ret1-260;
-#ifndef QRUOV_USE_MULTI_THREAD
-        break;
-#endif
-        goto end_for;
-      }
-
-    Fql2Fq(&(Li->data[INDEX(para->l * j + k, 0, Li->col)]),
-              Li_Fql.data[INDEX(j, 0, Li_Fql.col)],
-              coeff_index_perm_k, para);
-    }
-    if(ret_code!=0){
-#ifndef QRUOV_USE_MULTI_THREAD
-        break;
-#endif
-        goto end_for;
-    }
-
-    end_for: // for multi thread
-    j=j; // dummy
-  }
-
-end:
-  Fql_matrix_clear(&Pi1_y, para);
-  Fql_matrix_clear(&yT, para);
-  Fql_matrix_clear(&Pi2T_y, para);
-  Fql_matrix_clear(&SdT_Pi1_y, para);
-  Fql_matrix_clear(&Sub, para);
-  Fql_matrix_clear(&Li_Fql, para);
-  Fql_matrix_clear(&u_Fql, para);
-
-  Fql_matrix_free(&Pi1_y);
-  Fql_matrix_free(&yT);
-  Fql_matrix_free(&Pi2T_y);
-  Fql_matrix_free(&SdT_Pi1_y);
-  Fql_matrix_free(&Sub);
-  Fql_matrix_free(&Li_Fql);
-  Fql_matrix_free(&u_Fql);
-
-  return ret_code;
-}
-
 int compute_Li_ui_op(FQ_MATRIX* Li, FQ_MATRIX* ui, const FQL_MATRIX_OP* Pi1,
                      const FQL_MATRIX_OP* Pi2T, const FQL_MATRIX_OP* SdT, const FQL_MATRIX_OP* y,
                      const QRUOV_params* para){
@@ -636,6 +509,133 @@ end:
   Fql_matrix_free_op(&Sub);
   Fql_matrix_free_op(&Li_Fql);
   Fql_matrix_free_op(&u_Fql);
+
+  return ret_code;
+}
+
+int compute_Li_ui_op2(FQ_MATRIX* Li, FQ_MATRIX* ui, const FQL_MATRIX* Pi1, const FQL_MATRIX* Pi2T,
+                  const FQL_MATRIX* SdT, const FQL_MATRIX* y, const QRUOV_params* para){
+
+  int ret_code, ret = 0;
+
+  FQL_MATRIX Pi1_y = {.data = NULL};
+  FQL_MATRIX yT = {.data = NULL};
+  FQL_MATRIX Pi2T_y = {.data = NULL};
+  FQL_MATRIX SdT_Pi1_y = {.data = NULL};
+  FQL_MATRIX Sub = {.data = NULL};
+  FQL_MATRIX Li_Fql = {.data = NULL};
+  FQL_MATRIX u_Fql = {.data = NULL};
+
+  ret = Fql_matrix_init(&Pi1_y, para->V, 1, 0, 0, para);
+  if(ret!=0){ ret_code = ret-0; goto end; }
+  Fql_matrix_clear(&Pi1_y, para);
+
+  ret = Fql_matrix_init(&yT, 1, para->V, 0, 0, para);
+  if(ret!=0){ ret_code = ret-10; goto end; }
+  Fql_matrix_clear(&yT, para);
+  for(int i=0; i<y->size; i++){
+    Fql_copy(yT.data[i], y->data[i], para);
+  }
+
+  ret = Fql_matrix_init(&Pi2T_y, para->M, 1, 0, 0, para);
+  if(ret!=0){ ret_code = ret-20; goto end; }
+  Fql_matrix_clear(&Pi2T_y, para);
+
+  ret = Fql_matrix_init(&SdT_Pi1_y, para->M, 1, 0, 0, para);
+  if(ret!=0){ ret_code = ret-30; goto end; }
+  Fql_matrix_clear(&SdT_Pi1_y, para);
+
+  ret = Fql_matrix_init(&Sub, para->M, 1, 0, 0, para);
+  if(ret!=0){ ret_code = ret-40; goto end; }
+  Fql_matrix_clear(&Sub, para);
+
+  ret = Fql_matrix_init(&Li_Fql, para->M, 1, 0, 0, para);
+  if(ret!=0){ ret_code = ret-50; goto end; }
+  Fql_matrix_clear(&Li_Fql, para);
+
+  ret = Fql_matrix_init(&u_Fql, 1, 1, 0, 0, para);
+  if(ret!=0){ ret_code = ret-60; goto end; }
+  Fql_matrix_clear(&u_Fql, para);
+
+  // compute
+  ret = Fql_matrix_mul_op2(&Pi1_y, Pi1, y, para); // Pi1_y := Pi1 * y
+  if(ret!=0){ ret_code = ret-70; goto end; }
+
+  ret = Fql_matrix_mul_op2(&u_Fql, &yT, &Pi1_y, para); // u_Fql := yT * Pi1_y
+  if(ret!=0){ ret_code = ret-110; goto end; }
+
+  // u: Fql -> Fq
+  // ui     FQ_MATRIX: 1 * 1
+  int coeff_index_perm_0 = 0;
+  ret = Fql_index_permute_op2(&coeff_index_perm_0, 0, para);
+  if(ret!=0){ ret_code = ret-150; goto end; }
+
+  Fql2Fq(&ui->data[0], u_Fql.data[0], coeff_index_perm_0, para);
+
+  ret = Fql_matrix_mul_op2(&Pi2T_y, Pi2T, y, para); // Pi2T_y := Pi2T * y
+  if(ret!=0){ ret_code = ret-160; goto end; }
+
+  // SdT_Pi1_y := S'T * PiT1 * y (Pi1T=Pi1 (P1 is symmetric) )
+  ret = Fql_matrix_mul_op2(&SdT_Pi1_y, SdT, &Pi1_y, para);
+  if(ret!=0){ ret_code = ret-200; goto end; }
+
+  ret = Fql_matrix_sub_op2(&Sub, &Pi2T_y, &SdT_Pi1_y, para); // Sub := Pi2T*y - Sd'T*Pi1T*y
+  if(ret!=0){ ret_code = ret-240; goto end; }
+
+  ret = Fql_matrix_add_op2(&Li_Fql, &Sub, &Sub, para); // Li_Fql = 2 * Sub
+  if(ret!=0){ ret_code = ret-250; goto end; }
+
+  // L: Fql -> Fq
+  int j = 0;
+  int k = 0;
+  int coeff_index_perm_k = 0;
+
+#ifdef QRUOV_USE_MULTI_THREAD
+  #pragma omp parallel for private(j, k, coeff_index_perm_k) shared(Li, Li_Fql, ret_code, para)
+#endif
+for(j=0; j<para->M; j++){
+    for(k=0; k<para->l; k++){
+
+      int ret1 = Fql_index_permute_op2(&coeff_index_perm_k, k, para);
+      if (ret1!=0){
+        ret_code = ret1-260;
+#ifndef QRUOV_USE_MULTI_THREAD
+        break;
+#endif
+        goto end_for;
+      }
+
+    Fql2Fq(&(Li->data[INDEX(para->l * j + k, 0, Li->col)]),
+              Li_Fql.data[INDEX(j, 0, Li_Fql.col)],
+              coeff_index_perm_k, para);
+    }
+    if(ret_code!=0){
+#ifndef QRUOV_USE_MULTI_THREAD
+        break;
+#endif
+        goto end_for;
+    }
+
+    end_for: // for multi thread
+    j=j; // dummy
+  }
+
+end:
+  Fql_matrix_clear(&Pi1_y, para);
+  Fql_matrix_clear(&yT, para);
+  Fql_matrix_clear(&Pi2T_y, para);
+  Fql_matrix_clear(&SdT_Pi1_y, para);
+  Fql_matrix_clear(&Sub, para);
+  Fql_matrix_clear(&Li_Fql, para);
+  Fql_matrix_clear(&u_Fql, para);
+
+  Fql_matrix_free(&Pi1_y);
+  Fql_matrix_free(&yT);
+  Fql_matrix_free(&Pi2T_y);
+  Fql_matrix_free(&SdT_Pi1_y);
+  Fql_matrix_free(&Sub);
+  Fql_matrix_free(&Li_Fql);
+  Fql_matrix_free(&u_Fql);
 
   return ret_code;
 }
@@ -855,6 +855,106 @@ end:
   return ret_code;
 }
 
+int compute_td_op(FQ_MATRIX* td, const FQL_MATRIX_OP* s, const FQL_MATRIX_OP* P1,
+                  const FQL_MATRIX_OP* P2T, const FQL_MATRIX_OP* P3, const QRUOV_params* para){
+
+  int ret_code = 0, ret1 = 0;
+
+  FQL_MATRIX_OP s_vinegar = {.data = NULL};
+  FQL_MATRIX_OP s_oil = {.data = NULL};
+  FQL_MATRIX_OP s_vinegarT = {.data = NULL};
+  FQL_MATRIX_OP s_oilT = {.data = NULL};
+
+  ret1 = Fql_matrix_init_op(&s_vinegar, para->V, 1, 0, 0, para);
+  if (ret1!=0){ ret_code = ret1-0; goto end; }
+  ret1 = Fql_matrix_init_op(&s_oil, para->M, 1, 0, 0, para);
+  if (ret1!=0){ ret_code = ret1-10; goto end; }
+
+  for (int i=0; i<para->V; i++){
+    s_vinegar.data[i] = s->data[i];
+  }
+  for (int i=0; i<para->M; i++){
+    s_oil.data[i] = s->data[(para->V)+i];
+  }
+
+  ret1 = Fql_matrix_init_op(&s_vinegarT, para->V, 1, 0, 0, para);
+  if (ret1!=0){ ret_code = ret1-20; goto end; }
+  ret1 = Fql_matrix_init_op(&s_oilT, para->M, 1, 0, 0, para);
+  if (ret1!=0){ ret_code = ret1-30; goto end; }
+
+  ret1 = Fql_matrix_copy_op(&s_vinegarT, &s_vinegar);
+  if (ret1!=0){ ret_code = ret1-40; goto end; }
+  Fql_matrix_transpose_op(&s_vinegarT);
+
+  ret1 = Fql_matrix_copy_op(&s_oilT, &s_oil);
+  if (ret1!=0){ ret_code = ret1-50; goto end; }
+  Fql_matrix_transpose_op(&s_oilT);
+
+  int i;
+#ifdef QRUOV_USE_MULTI_THREAD
+  #pragma omp parallel for private(i) shared(td, s_vinegar, s_oil, P1, P2T, P3, s_vinegarT, \
+                                             s_oilT, para)
+#endif
+
+  for (i=0; i<para->m; i++){
+
+    int ret2 = 0;
+
+    FQL_MATRIX_OP tmp_vinegar = {.data = NULL};
+    FQL_MATRIX_OP tmp_oil = {.data = NULL};
+    FQL_MATRIX_OP tmp = {.data = NULL};
+
+    ret2 = Fql_matrix_init_op(&tmp_vinegar, para->V, 1, 0, 0, para);
+    if (ret2!=0){ ret_code = ret2-60; goto end_for; }
+    Fql_matrix_clear_op(&tmp_vinegar, para);
+
+    ret2 = Fql_matrix_init_op(&tmp_oil, para->M, 1, 0, 0, para);
+    if (ret2!=0){ ret_code = ret2-70; goto end_for; }
+    Fql_matrix_clear_op(&tmp_oil, para);
+
+    ret2 = Fql_matrix_init_op(&tmp, 1, 1, 0, 0, para);
+    if (ret2!=0){ ret_code = ret2-80; goto end_for; }
+    Fql_matrix_clear_op(&tmp, para);
+
+    ret2 = Fql_matrix_mul_op(&tmp_vinegar, &(P1[i]), &s_vinegar, para);
+    if (ret2!=0){ ret_code = ret2-90; goto end_for; }
+
+    ret2 = Fql_matrix_mul_op(&tmp_oil, &(P2T[i]), &s_vinegar, para);
+    if (ret2!=0){ ret_code = ret2-130; goto end_for; }
+
+    ret2 = Fql_matrix_add_op(&tmp_oil, &tmp_oil, &tmp_oil, para);
+    if (ret2!=0){ ret_code = ret2-170; goto end_for; }
+
+    ret2 = Fql_matrix_mul_add_op(&tmp_oil, &(P3[i]), &s_oil, &tmp_oil, para);
+    if (ret2!=0){ ret_code = ret2-180; goto end_for; }
+
+    ret2 = Fql_matrix_mul_op(&tmp, &s_vinegarT, &tmp_vinegar, para);
+    if (ret2!=0){ ret_code = ret2-230; goto end_for; }
+
+    ret2 = Fql_matrix_mul_add_op(&tmp, &s_oilT, &tmp_oil, &tmp, para);
+    if (ret2!=0){ ret_code = ret2-270; goto end_for; }
+
+    int coeff_index_perm_0 = 0;
+    ret2 = Fql_index_permute(&coeff_index_perm_0, 0, para);
+    if (ret2!=0){ ret_code = ret2-320; goto end_for; }
+
+    Fql2Fq_op(&(td->data[i]), &(tmp.data[0]), coeff_index_perm_0, para);
+
+    end_for:
+    Fql_matrix_free_op(&tmp);
+    Fql_matrix_free_op(&tmp_oil);
+    Fql_matrix_free_op(&tmp_vinegar);
+  }
+
+end:
+  Fql_matrix_free_op(&s_oil);
+  Fql_matrix_free_op(&s_vinegar);
+  Fql_matrix_free_op(&s_oilT);
+  Fql_matrix_free_op(&s_vinegarT);
+
+  return ret_code;
+}
+
 int compute_td_op2(FQ_MATRIX* td, const FQL_MATRIX* s, const FQL_MATRIX* P1, const FQL_MATRIX* P2T,
                const FQL_MATRIX* P3, const QRUOV_params* para){
 
@@ -955,106 +1055,6 @@ end:
   Fql_matrix_free(&s_vinegar);
   Fql_matrix_free(&s_oilT);
   Fql_matrix_free(&s_vinegarT);
-
-  return ret_code;
-}
-
-int compute_td_op(FQ_MATRIX* td, const FQL_MATRIX_OP* s, const FQL_MATRIX_OP* P1,
-                  const FQL_MATRIX_OP* P2T, const FQL_MATRIX_OP* P3, const QRUOV_params* para){
-
-  int ret_code = 0, ret1 = 0;
-
-  FQL_MATRIX_OP s_vinegar = {.data = NULL};
-  FQL_MATRIX_OP s_oil = {.data = NULL};
-  FQL_MATRIX_OP s_vinegarT = {.data = NULL};
-  FQL_MATRIX_OP s_oilT = {.data = NULL};
-
-  ret1 = Fql_matrix_init_op(&s_vinegar, para->V, 1, 0, 0, para);
-  if (ret1!=0){ ret_code = ret1-0; goto end; }
-  ret1 = Fql_matrix_init_op(&s_oil, para->M, 1, 0, 0, para);
-  if (ret1!=0){ ret_code = ret1-10; goto end; }
-
-  for (int i=0; i<para->V; i++){
-    s_vinegar.data[i] = s->data[i];
-  }
-  for (int i=0; i<para->M; i++){
-    s_oil.data[i] = s->data[(para->V)+i];
-  }
-
-  ret1 = Fql_matrix_init_op(&s_vinegarT, para->V, 1, 0, 0, para);
-  if (ret1!=0){ ret_code = ret1-20; goto end; }
-  ret1 = Fql_matrix_init_op(&s_oilT, para->M, 1, 0, 0, para);
-  if (ret1!=0){ ret_code = ret1-30; goto end; }
-
-  ret1 = Fql_matrix_copy_op(&s_vinegarT, &s_vinegar);
-  if (ret1!=0){ ret_code = ret1-40; goto end; }
-  Fql_matrix_transpose_op(&s_vinegarT);
-
-  ret1 = Fql_matrix_copy_op(&s_oilT, &s_oil);
-  if (ret1!=0){ ret_code = ret1-50; goto end; }
-  Fql_matrix_transpose_op(&s_oilT);
-
-  int i;
-#ifdef QRUOV_USE_MULTI_THREAD
-  #pragma omp parallel for private(i) shared(td, s_vinegar, s_oil, P1, P2T, P3, s_vinegarT, \
-                                             s_oilT, para)
-#endif
-
-  for (i=0; i<para->m; i++){
-
-    int ret2 = 0;
-
-    FQL_MATRIX_OP tmp_vinegar = {.data = NULL};
-    FQL_MATRIX_OP tmp_oil = {.data = NULL};
-    FQL_MATRIX_OP tmp = {.data = NULL};
-
-    ret2 = Fql_matrix_init_op(&tmp_vinegar, para->V, 1, 0, 0, para);
-    if (ret2!=0){ ret_code = ret2-60; goto end_for; }
-    Fql_matrix_clear_op(&tmp_vinegar, para);
-
-    ret2 = Fql_matrix_init_op(&tmp_oil, para->M, 1, 0, 0, para);
-    if (ret2!=0){ ret_code = ret2-70; goto end_for; }
-    Fql_matrix_clear_op(&tmp_oil, para);
-
-    ret2 = Fql_matrix_init_op(&tmp, 1, 1, 0, 0, para);
-    if (ret2!=0){ ret_code = ret2-80; goto end_for; }
-    Fql_matrix_clear_op(&tmp, para);
-
-    ret2 = Fql_matrix_mul_op(&tmp_vinegar, &(P1[i]), &s_vinegar, para);
-    if (ret2!=0){ ret_code = ret2-90; goto end_for; }
-
-    ret2 = Fql_matrix_mul_op(&tmp_oil, &(P2T[i]), &s_vinegar, para);
-    if (ret2!=0){ ret_code = ret2-130; goto end_for; }
-
-    ret2 = Fql_matrix_add_op(&tmp_oil, &tmp_oil, &tmp_oil, para);
-    if (ret2!=0){ ret_code = ret2-170; goto end_for; }
-
-    ret2 = Fql_matrix_mul_add_op(&tmp_oil, &(P3[i]), &s_oil, &tmp_oil, para);
-    if (ret2!=0){ ret_code = ret2-180; goto end_for; }
-
-    ret2 = Fql_matrix_mul_op(&tmp, &s_vinegarT, &tmp_vinegar, para);
-    if (ret2!=0){ ret_code = ret2-230; goto end_for; }
-
-    ret2 = Fql_matrix_mul_add_op(&tmp, &s_oilT, &tmp_oil, &tmp, para);
-    if (ret2!=0){ ret_code = ret2-270; goto end_for; }
-
-    int coeff_index_perm_0 = 0;
-    ret2 = Fql_index_permute(&coeff_index_perm_0, 0, para);
-    if (ret2!=0){ ret_code = ret2-320; goto end_for; }
-
-    Fql2Fq_op(&(td->data[i]), &(tmp.data[0]), coeff_index_perm_0, para);
-
-    end_for:
-    Fql_matrix_free_op(&tmp);
-    Fql_matrix_free_op(&tmp_oil);
-    Fql_matrix_free_op(&tmp_vinegar);
-  }
-
-end:
-  Fql_matrix_free_op(&s_oil);
-  Fql_matrix_free_op(&s_vinegar);
-  Fql_matrix_free_op(&s_oilT);
-  Fql_matrix_free_op(&s_vinegarT);
 
   return ret_code;
 }

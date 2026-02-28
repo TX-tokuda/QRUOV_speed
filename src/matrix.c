@@ -483,40 +483,6 @@ int Fql_matrix_copy(FQL_MATRIX* R, const FQL_MATRIX* A, const QRUOV_params* para
   return 0;
 }
 
-int Fql_matrix_copy_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const QRUOV_params* para){
-
-  if ((R->row)!=(A->row)){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_copy] R->row must be == A->row.\n");
-#endif
-    return -1;
-  }
-  if ((R->col)!=(A->col)){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_copy] R->col must be == A->col.\n");
-#endif
-    return -2;
-  }
-  if ((R->symmetric)!=(A->symmetric)){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_copy] R->symmetric must be == A->symmetric.\n");
-#endif
-    return -3;
-  }
-  if ((R->transpose)!=(A->transpose)){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_copy] R->transpose must be == A->transpose.\n");
-#endif
-    return -4;
-  }
-
-  for (int i=0; i<(R->size); i++){
-    Fql_copy_op2(R->data[i], A->data[i], para);
-  }
-
-  return 0;
-}
-
 int Fql_matrix_copy_op(FQL_MATRIX_OP* R, const FQL_MATRIX_OP* A){
 
   if ((R->row)!=(A->row)){
@@ -546,6 +512,40 @@ int Fql_matrix_copy_op(FQL_MATRIX_OP* R, const FQL_MATRIX_OP* A){
 
   for (int i=0; i<(R->size); i++){
     R->data[i] = A->data[i];
+  }
+
+  return 0;
+}
+
+int Fql_matrix_copy_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const QRUOV_params* para){
+
+  if ((R->row)!=(A->row)){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_copy] R->row must be == A->row.\n");
+#endif
+    return -1;
+  }
+  if ((R->col)!=(A->col)){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_copy] R->col must be == A->col.\n");
+#endif
+    return -2;
+  }
+  if ((R->symmetric)!=(A->symmetric)){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_copy] R->symmetric must be == A->symmetric.\n");
+#endif
+    return -3;
+  }
+  if ((R->transpose)!=(A->transpose)){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_copy] R->transpose must be == A->transpose.\n");
+#endif
+    return -4;
+  }
+
+  for (int i=0; i<(R->size); i++){
+    Fql_copy_op2(R->data[i], A->data[i], para);
   }
 
   return 0;
@@ -617,6 +617,71 @@ int Fql_matrix_add(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
   return 0;
 }
 
+int Fql_matrix_add_op(FQL_MATRIX_OP* R, const FQL_MATRIX_OP* A, const FQL_MATRIX_OP* B,
+                      const QRUOV_params* para){
+
+  int R_row = (R->transpose) ? (R->col) : (R->row);
+  int R_col = (R->transpose) ? (R->row) : (R->col);
+  int A_row = (A->transpose) ? (A->col) : (A->row);
+  int A_col = (A->transpose) ? (A->row) : (A->col);
+  int B_row = (B->transpose) ? (B->col) : (B->row);
+  int B_col = (B->transpose) ? (B->row) : (B->col);
+
+  if (! ((R_row)==(A_row) && (A_row)==(B_row)) ){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_add_op] R->row (or transposed R->col), "
+                    "A->row (or transposed A->col), B->row (or transposed B->col) "
+                    "must be equal.\n");
+#endif
+    return -1;
+  }
+  if (! ((R_col)==(A_col) && (A_col)==(B_col)) ){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_add_op] R->col (or transposed R->row), "
+                    "A->col (or transposed A->row), B->col (or transposed B->row) "
+                    "must be equal.\n");
+#endif
+    return -2;
+  }
+ 
+  int i, j = 0;
+#ifdef QRUOV_USE_MULTI_THREAD
+  #pragma omp parallel for private(i, j) shared(A, B, R, para)
+#endif
+  for (i=0; i<A_row; i++){
+    for(j=0; j<A_col; j++){
+
+      int index_r, index_a, index_b = 0;
+      if (R->transpose){
+        if (R->symmetric) index_r = SYMMETRIC_INDEX(j, i, R->col);
+        else              index_r = INDEX(j, i, R->col);
+      }else{
+        if (R->symmetric) index_r = SYMMETRIC_INDEX(i, j, R->col);
+        else              index_r = INDEX(i, j, R->col);
+      }
+
+      if (A->transpose){
+        if (A->symmetric) index_a = SYMMETRIC_INDEX(j, i, A->col);
+        else              index_a = INDEX(j, i, A->col);
+      }else{
+        if (A->symmetric) index_a = SYMMETRIC_INDEX(i, j, A->col);
+        else              index_a = INDEX(i, j, A->col);
+      }
+
+      if (B->transpose){
+        if (B->symmetric) index_b = SYMMETRIC_INDEX(j, i, B->col);
+        else              index_b = INDEX(j, i, B->col);
+      }else{
+        if (B->symmetric) index_b = SYMMETRIC_INDEX(i, j, B->col);
+        else              index_b = INDEX(i, j, B->col);
+      }
+      Fql_add_op(&(R->data[index_r]), &(A->data[index_a]), &(B->data[index_b]));
+    }
+  }
+
+  return 0;
+}
+
 int Fql_matrix_add_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
                    const QRUOV_params* para){
 
@@ -677,71 +742,6 @@ int Fql_matrix_add_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
       }
 
       Fql_add_op2(R->data[index_r], A->data[index_a], B->data[index_b], para);
-    }
-  }
-
-  return 0;
-}
-
-int Fql_matrix_add_op(FQL_MATRIX_OP* R, const FQL_MATRIX_OP* A, const FQL_MATRIX_OP* B,
-                      const QRUOV_params* para){
-
-  int R_row = (R->transpose) ? (R->col) : (R->row);
-  int R_col = (R->transpose) ? (R->row) : (R->col);
-  int A_row = (A->transpose) ? (A->col) : (A->row);
-  int A_col = (A->transpose) ? (A->row) : (A->col);
-  int B_row = (B->transpose) ? (B->col) : (B->row);
-  int B_col = (B->transpose) ? (B->row) : (B->col);
-
-  if (! ((R_row)==(A_row) && (A_row)==(B_row)) ){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_add_op] R->row (or transposed R->col), "
-                    "A->row (or transposed A->col), B->row (or transposed B->col) "
-                    "must be equal.\n");
-#endif
-    return -1;
-  }
-  if (! ((R_col)==(A_col) && (A_col)==(B_col)) ){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_add_op] R->col (or transposed R->row), "
-                    "A->col (or transposed A->row), B->col (or transposed B->row) "
-                    "must be equal.\n");
-#endif
-    return -2;
-  }
- 
-  int i, j = 0;
-#ifdef QRUOV_USE_MULTI_THREAD
-  #pragma omp parallel for private(i, j) shared(A, B, R, para)
-#endif
-  for (i=0; i<A_row; i++){
-    for(j=0; j<A_col; j++){
-
-      int index_r, index_a, index_b = 0;
-      if (R->transpose){
-        if (R->symmetric) index_r = SYMMETRIC_INDEX(j, i, R->col);
-        else              index_r = INDEX(j, i, R->col);
-      }else{
-        if (R->symmetric) index_r = SYMMETRIC_INDEX(i, j, R->col);
-        else              index_r = INDEX(i, j, R->col);
-      }
-
-      if (A->transpose){
-        if (A->symmetric) index_a = SYMMETRIC_INDEX(j, i, A->col);
-        else              index_a = INDEX(j, i, A->col);
-      }else{
-        if (A->symmetric) index_a = SYMMETRIC_INDEX(i, j, A->col);
-        else              index_a = INDEX(i, j, A->col);
-      }
-
-      if (B->transpose){
-        if (B->symmetric) index_b = SYMMETRIC_INDEX(j, i, B->col);
-        else              index_b = INDEX(j, i, B->col);
-      }else{
-        if (B->symmetric) index_b = SYMMETRIC_INDEX(i, j, B->col);
-        else              index_b = INDEX(i, j, B->col);
-      }
-      Fql_add_op(&(R->data[index_r]), &(A->data[index_a]), &(B->data[index_b]));
     }
   }
 
@@ -815,73 +815,6 @@ int Fql_matrix_sub(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
   return 0;
 }
 
-int Fql_matrix_sub_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
-                   const QRUOV_params* para){
-
-  int R_row = (R->transpose) ? (R->col) : (R->row);
-  int R_col = (R->transpose) ? (R->row) : (R->col);
-  int A_row = (A->transpose) ? (A->col) : (A->row);
-  int A_col = (A->transpose) ? (A->row) : (A->col);
-  int B_row = (B->transpose) ? (B->col) : (B->row);
-  int B_col = (B->transpose) ? (B->row) : (B->col);
-
-  if (! ((R_row)==(A_row) && (A_row)==(B_row)) ){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_sub] R->row (or transposed R->col), "
-                    "A->row (or transposed A->col), B->row (or transposed B->col) "
-                    "must be equal.\n");
-#endif
-    return -1;
-  }
-  if (! ((R_col)==(A_col) && (A_col)==(B_col)) ){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_sub] R->col (or transposed R->row), "
-                    "A->col (or transposed A->row), B->col (or transposed B->row) "
-                    "must be equal.\n");
-#endif
-    return -2;
-  }
-
-  int i, j = 0;
-#ifdef QRUOV_USE_MULTI_THREAD
-  #pragma omp parallel for private(i, j) shared(A, B, R, para)
-#endif
-  for (i=0; i<A_row; i++){
-    for(j=0; j<A_col; j++){
-
-      int index_r, index_a, index_b = 0;
-      if (R->transpose){
-        if (R->symmetric) index_r = SYMMETRIC_INDEX(j, i, R->col);
-        else              index_r = INDEX(j, i, R->col);
-      }else{
-        if (R->symmetric) index_r = SYMMETRIC_INDEX(i, j, R->col);
-        else              index_r = INDEX(i, j, R->col);
-      }
-
-      if (A->transpose){
-        if (A->symmetric) index_a = SYMMETRIC_INDEX(j, i, A->col);
-        else              index_a = INDEX(j, i, A->col);
-      }else{
-        if (A->symmetric) index_a = SYMMETRIC_INDEX(i, j, A->col);
-        else              index_a = INDEX(i, j, A->col);
-      }
-
-      if (B->transpose){
-        if (B->symmetric) index_b = SYMMETRIC_INDEX(j, i, B->col);
-        else              index_b = INDEX(j, i, B->col);
-      }else{
-        if (B->symmetric) index_b = SYMMETRIC_INDEX(i, j, B->col);
-        else              index_b = INDEX(i, j, B->col);
-      }
-
-      Fql_sub_op2(R->data[index_r], A->data[index_a], B->data[index_b], para);
-
-    }
-  }
-
-  return 0;
-}
-
 int Fql_matrix_sub_op(FQL_MATRIX_OP* R, const FQL_MATRIX_OP* A, const FQL_MATRIX_OP* B,
                       const QRUOV_params* para){
 
@@ -942,6 +875,73 @@ int Fql_matrix_sub_op(FQL_MATRIX_OP* R, const FQL_MATRIX_OP* A, const FQL_MATRIX
       }
 
       Fql_sub_op(&(R->data[index_r]), &(A->data[index_a]), &(B->data[index_b]));
+
+    }
+  }
+
+  return 0;
+}
+
+int Fql_matrix_sub_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
+                   const QRUOV_params* para){
+
+  int R_row = (R->transpose) ? (R->col) : (R->row);
+  int R_col = (R->transpose) ? (R->row) : (R->col);
+  int A_row = (A->transpose) ? (A->col) : (A->row);
+  int A_col = (A->transpose) ? (A->row) : (A->col);
+  int B_row = (B->transpose) ? (B->col) : (B->row);
+  int B_col = (B->transpose) ? (B->row) : (B->col);
+
+  if (! ((R_row)==(A_row) && (A_row)==(B_row)) ){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_sub] R->row (or transposed R->col), "
+                    "A->row (or transposed A->col), B->row (or transposed B->col) "
+                    "must be equal.\n");
+#endif
+    return -1;
+  }
+  if (! ((R_col)==(A_col) && (A_col)==(B_col)) ){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_sub] R->col (or transposed R->row), "
+                    "A->col (or transposed A->row), B->col (or transposed B->row) "
+                    "must be equal.\n");
+#endif
+    return -2;
+  }
+
+  int i, j = 0;
+#ifdef QRUOV_USE_MULTI_THREAD
+  #pragma omp parallel for private(i, j) shared(A, B, R, para)
+#endif
+  for (i=0; i<A_row; i++){
+    for(j=0; j<A_col; j++){
+
+      int index_r, index_a, index_b = 0;
+      if (R->transpose){
+        if (R->symmetric) index_r = SYMMETRIC_INDEX(j, i, R->col);
+        else              index_r = INDEX(j, i, R->col);
+      }else{
+        if (R->symmetric) index_r = SYMMETRIC_INDEX(i, j, R->col);
+        else              index_r = INDEX(i, j, R->col);
+      }
+
+      if (A->transpose){
+        if (A->symmetric) index_a = SYMMETRIC_INDEX(j, i, A->col);
+        else              index_a = INDEX(j, i, A->col);
+      }else{
+        if (A->symmetric) index_a = SYMMETRIC_INDEX(i, j, A->col);
+        else              index_a = INDEX(i, j, A->col);
+      }
+
+      if (B->transpose){
+        if (B->symmetric) index_b = SYMMETRIC_INDEX(j, i, B->col);
+        else              index_b = INDEX(j, i, B->col);
+      }else{
+        if (B->symmetric) index_b = SYMMETRIC_INDEX(i, j, B->col);
+        else              index_b = INDEX(i, j, B->col);
+      }
+
+      Fql_sub_op2(R->data[index_r], A->data[index_a], B->data[index_b], para);
 
     }
   }
@@ -1068,6 +1068,87 @@ int Fql_matrix_mul(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
   return ret;
 }
 
+int Fql_matrix_mul_op(FQL_MATRIX_OP* R, const FQL_MATRIX_OP* A, const FQL_MATRIX_OP* B,
+                      const QRUOV_params* para){
+
+  int ret = 0;
+
+  int row_1 = (A->transpose) ? (A->col) : (A->row);
+  int col_1 = (A->transpose) ? (A->row) : (A->col);
+  int row_2 = (B->transpose) ? (B->col) : (B->row);
+  int col_2 = (B->transpose) ? (B->row) : (B->col);
+
+  if (col_1!=row_2){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_mul] A->col (or transposed A->row) "
+                    "must be == B->row (or transposed B->col).\n");
+#endif
+    return -1;
+  }
+  if ((R->row)!=row_1){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_mul] R->row must be == A->row (or transposed A->col).\n");
+#endif
+    return -2;
+  }
+  if ((R->col)!=col_2){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_mul] R->col must be == B->col (or transposed B->row).\n");
+#endif
+    return -3;
+  }
+  if (R->transpose){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_mul] R must not be transpose.\n");
+#endif
+    return -4;
+  }
+
+  int len = col_1;
+
+  int i, j, k;
+#ifdef QRUOV_USE_MULTI_THREAD
+  #pragma omp parallel for private(i, j, k) shared(ret, len, A, B, R, para)
+#endif
+  for (i=0; i<(R->row); i++){
+    for (j=0; j<(R->col); j++){
+
+      Fql r = 0;
+      int index_r;
+      if (R->symmetric){
+        if (i>j) continue;
+        else     index_r = SYMMETRIC_INDEX(i, j, R->col);
+      }else{
+        index_r = INDEX(i, j, R->col);
+      }
+
+      for (k=0; k<len; k++){
+
+        int index_a, index_b;
+        if (A->transpose){
+          if (A->symmetric) index_a = SYMMETRIC_INDEX(k, i, A->col);
+          else              index_a = INDEX(k, i, A->col);
+        }else{
+          if (A->symmetric) index_a = SYMMETRIC_INDEX(i, k, A->col);
+          else              index_a = INDEX(i, k, A->col);
+        }
+        if (B->transpose){
+          if (B->symmetric) index_b = SYMMETRIC_INDEX(j, k, B->col);
+          else              index_b = INDEX(j, k, B->col);
+        }else{
+          if (B->symmetric) index_b = SYMMETRIC_INDEX(k, j, B->col);
+          else              index_b = INDEX(k, j, B->col);
+        }
+
+        Fql_mul_add_op(&r, &(A->data[index_a]), &(B->data[index_b]), &r);
+      }
+      R->data[index_r] = r;
+    }
+  }
+
+  return ret;
+}
+
 int Fql_matrix_mul_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
                    const QRUOV_params* para){
 
@@ -1182,87 +1263,6 @@ int Fql_matrix_mul_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
     }
     end_for: // for multi thread
     i=i; // dummy
-  }
-
-  return ret;
-}
-
-int Fql_matrix_mul_op(FQL_MATRIX_OP* R, const FQL_MATRIX_OP* A, const FQL_MATRIX_OP* B,
-                      const QRUOV_params* para){
-
-  int ret = 0;
-
-  int row_1 = (A->transpose) ? (A->col) : (A->row);
-  int col_1 = (A->transpose) ? (A->row) : (A->col);
-  int row_2 = (B->transpose) ? (B->col) : (B->row);
-  int col_2 = (B->transpose) ? (B->row) : (B->col);
-
-  if (col_1!=row_2){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul] A->col (or transposed A->row) "
-                    "must be == B->row (or transposed B->col).\n");
-#endif
-    return -1;
-  }
-  if ((R->row)!=row_1){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul] R->row must be == A->row (or transposed A->col).\n");
-#endif
-    return -2;
-  }
-  if ((R->col)!=col_2){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul] R->col must be == B->col (or transposed B->row).\n");
-#endif
-    return -3;
-  }
-  if (R->transpose){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul] R must not be transpose.\n");
-#endif
-    return -4;
-  }
-
-  int len = col_1;
-
-  int i, j, k;
-#ifdef QRUOV_USE_MULTI_THREAD
-  #pragma omp parallel for private(i, j, k) shared(ret, len, A, B, R, para)
-#endif
-  for (i=0; i<(R->row); i++){
-    for (j=0; j<(R->col); j++){
-
-      Fql r = 0;
-      int index_r;
-      if (R->symmetric){
-        if (i>j) continue;
-        else     index_r = SYMMETRIC_INDEX(i, j, R->col);
-      }else{
-        index_r = INDEX(i, j, R->col);
-      }
-
-      for (k=0; k<len; k++){
-
-        int index_a, index_b;
-        if (A->transpose){
-          if (A->symmetric) index_a = SYMMETRIC_INDEX(k, i, A->col);
-          else              index_a = INDEX(k, i, A->col);
-        }else{
-          if (A->symmetric) index_a = SYMMETRIC_INDEX(i, k, A->col);
-          else              index_a = INDEX(i, k, A->col);
-        }
-        if (B->transpose){
-          if (B->symmetric) index_b = SYMMETRIC_INDEX(j, k, B->col);
-          else              index_b = INDEX(j, k, B->col);
-        }else{
-          if (B->symmetric) index_b = SYMMETRIC_INDEX(k, j, B->col);
-          else              index_b = INDEX(k, j, B->col);
-        }
-
-        Fql_mul_add_op(&r, &(A->data[index_a]), &(B->data[index_b]), &r);
-      }
-      R->data[index_r] = r;
-    }
   }
 
   return ret;
@@ -1415,6 +1415,102 @@ int Fql_matrix_mul_add(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
   return ret;
 }
 
+
+int Fql_matrix_mul_add_op(FQL_MATRIX_OP* R, const FQL_MATRIX_OP* A, const FQL_MATRIX_OP* B,
+                          const FQL_MATRIX_OP* C, const QRUOV_params* para){
+
+  int ret = 0;
+
+  int row_1 = (A->transpose) ? (A->col) : (A->row);
+  int col_1 = (A->transpose) ? (A->row) : (A->col);
+  int row_2 = (B->transpose) ? (B->col) : (B->row);
+  int col_2 = (B->transpose) ? (B->row) : (B->col);
+
+  if (col_1!=row_2){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_mul_add_op] A->col (or transposed A->row) "
+                    "must be == B->row (or transposed B->col).\n");
+#endif
+    return -1;
+  }
+  if (! ((R->row)==row_1 && row_1==(C->row)) ){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_mul_add_op] R->row, A->row (or transposed A->col), C->row "
+                    "must be equal.\n");
+#endif
+    return -2;
+  }
+  if (! ((R->col)==col_2 && col_2==(C->col)) ){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_mul_add_op] R->col, B->col (or transposed B->row), C->col "
+                    "must be equal.\n");
+#endif
+    return -3;
+  }
+  if (R->transpose){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_mul_add_op] R must not be transpose.\n");
+#endif
+    return -4;
+  }
+  if (C->transpose){
+#ifdef DEBUG
+    fprintf(stderr, "[Fql_matrix_mul_add_op] C must not be transpose.\n");
+#endif
+    return -5;
+  }
+
+  int len = col_1;
+
+  int i, j, k;
+#ifdef QRUOV_USE_MULTI_THREAD
+  #pragma omp parallel for private(i, j, k) shared(ret, len, A, B, C, R, para)
+#endif
+  for (i=0; i<(R->row); i++){
+    for (j=0; j<(R->col); j++){
+
+      Fql r = 0;
+      int index_r, index_c;
+      if (R->symmetric){
+        if (i>j) continue;
+        else     index_r = SYMMETRIC_INDEX(i, j, R->col);
+      }else{
+        index_r = INDEX(i, j, R->col);
+      }
+
+      if (C->symmetric) index_c = SYMMETRIC_INDEX(i, j, C->col);
+      else              index_c = INDEX(i, j, C->col);
+
+      for (k=0; k<len; k++){
+
+        int index_a, index_b;
+        if (A->transpose){
+          if (A->symmetric) index_a = SYMMETRIC_INDEX(k, i, A->col);
+          else              index_a = INDEX(k, i, A->col);
+        }else{
+          if (A->symmetric) index_a = SYMMETRIC_INDEX(i, k, A->col);
+          else              index_a = INDEX(i, k, A->col);
+        }
+        if (B->transpose){
+          if (B->symmetric) index_b = SYMMETRIC_INDEX(j, k, B->col);
+          else              index_b = INDEX(j, k, B->col);
+        }else{
+          if (B->symmetric) index_b = SYMMETRIC_INDEX(k, j, B->col);
+          else              index_b = INDEX(k, j, B->col);
+        }
+
+        Fql_mul_add_op(&r, &(A->data[index_a]), &(B->data[index_b]), &r);
+      }
+
+      Fql s = 0;
+      Fql_add_op(&s, &r, &(C->data[index_c]));
+      R->data[index_r] = s;
+    }
+  }
+
+  return ret;
+}
+
 int Fql_matrix_mul_add_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
                        const FQL_MATRIX* C, const QRUOV_params* para){
 
@@ -1557,102 +1653,6 @@ int Fql_matrix_mul_add_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX*
     }
     end_for: // for multi thread
     i=i; // dummy
-  }
-
-  return ret;
-}
-
-
-int Fql_matrix_mul_add_op(FQL_MATRIX_OP* R, const FQL_MATRIX_OP* A, const FQL_MATRIX_OP* B,
-                          const FQL_MATRIX_OP* C, const QRUOV_params* para){
-
-  int ret = 0;
-
-  int row_1 = (A->transpose) ? (A->col) : (A->row);
-  int col_1 = (A->transpose) ? (A->row) : (A->col);
-  int row_2 = (B->transpose) ? (B->col) : (B->row);
-  int col_2 = (B->transpose) ? (B->row) : (B->col);
-
-  if (col_1!=row_2){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul_add_op] A->col (or transposed A->row) "
-                    "must be == B->row (or transposed B->col).\n");
-#endif
-    return -1;
-  }
-  if (! ((R->row)==row_1 && row_1==(C->row)) ){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul_add_op] R->row, A->row (or transposed A->col), C->row "
-                    "must be equal.\n");
-#endif
-    return -2;
-  }
-  if (! ((R->col)==col_2 && col_2==(C->col)) ){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul_add_op] R->col, B->col (or transposed B->row), C->col "
-                    "must be equal.\n");
-#endif
-    return -3;
-  }
-  if (R->transpose){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul_add_op] R must not be transpose.\n");
-#endif
-    return -4;
-  }
-  if (C->transpose){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul_add_op] C must not be transpose.\n");
-#endif
-    return -5;
-  }
-
-  int len = col_1;
-
-  int i, j, k;
-#ifdef QRUOV_USE_MULTI_THREAD
-  #pragma omp parallel for private(i, j, k) shared(ret, len, A, B, C, R, para)
-#endif
-  for (i=0; i<(R->row); i++){
-    for (j=0; j<(R->col); j++){
-
-      Fql r = 0;
-      int index_r, index_c;
-      if (R->symmetric){
-        if (i>j) continue;
-        else     index_r = SYMMETRIC_INDEX(i, j, R->col);
-      }else{
-        index_r = INDEX(i, j, R->col);
-      }
-
-      if (C->symmetric) index_c = SYMMETRIC_INDEX(i, j, C->col);
-      else              index_c = INDEX(i, j, C->col);
-
-      for (k=0; k<len; k++){
-
-        int index_a, index_b;
-        if (A->transpose){
-          if (A->symmetric) index_a = SYMMETRIC_INDEX(k, i, A->col);
-          else              index_a = INDEX(k, i, A->col);
-        }else{
-          if (A->symmetric) index_a = SYMMETRIC_INDEX(i, k, A->col);
-          else              index_a = INDEX(i, k, A->col);
-        }
-        if (B->transpose){
-          if (B->symmetric) index_b = SYMMETRIC_INDEX(j, k, B->col);
-          else              index_b = INDEX(j, k, B->col);
-        }else{
-          if (B->symmetric) index_b = SYMMETRIC_INDEX(k, j, B->col);
-          else              index_b = INDEX(k, j, B->col);
-        }
-
-        Fql_mul_add_op(&r, &(A->data[index_a]), &(B->data[index_b]), &r);
-      }
-
-      Fql s = 0;
-      Fql_add_op(&s, &r, &(C->data[index_c]));
-      R->data[index_r] = s;
-    }
   }
 
   return ret;
