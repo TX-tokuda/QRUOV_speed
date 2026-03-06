@@ -93,7 +93,7 @@ void Fql_add_op(Fql* r, const Fql* a, const Fql* b){
 
 void Fql_add_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
 
-  for (int i=0; i<3; i++){
+  for (int i=0; i<(para->Fql_degree+1); i++){
     r[i] = Fq_add_op2(a[i], b[i], para);
   }
 
@@ -124,7 +124,7 @@ void Fql_sub_op(Fql* r, const Fql* a, const Fql* b){
 
 void Fql_sub_op2(Fq* r, const Fq* a, const Fq* b, const QRUOV_params* para){
 
-  for (int i=0; i<3; i++){
+  for (int i=0; i<(para->Fql_degree+1); i++){
     r[i] = Fq_sub_op2(a[i], b[i], para);
   }
 
