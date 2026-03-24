@@ -247,9 +247,7 @@ int compute_P1_P2T_P3_op2(FQL_MATRIX* P1, FQL_MATRIX* P2T, FQL_MATRIX* P3,
 
   FQL_MATRIX Sd = {.data = NULL};
   ret = Fql_matrix_init(&Sd, para->V, para->M, 0, 1, para);
-  if (ret!=0){ ret_code = ret-0; goto end; }
   ret = Fql_matrix_copy(&Sd, SdT, para);
-  if (ret!=0){ ret_code = ret-10; goto end; }
   Fql_matrix_transpose(&Sd);
 
   if (para->prg_shake==1){
@@ -264,7 +262,6 @@ int compute_P1_P2T_P3_op2(FQL_MATRIX* P1, FQL_MATRIX* P2T, FQL_MATRIX* P3,
   }else{
     ret = AES_update((AES_CTX*)*ctx, pk_seed, para->AES_len*8);
   }
-  if (ret!=0){ ret_code = ret-30; goto end; }
 
   int i;
 #ifdef QRUOV_USE_MULTI_THREAD
@@ -275,22 +272,8 @@ int compute_P1_P2T_P3_op2(FQL_MATRIX* P1, FQL_MATRIX* P2T, FQL_MATRIX* P3,
     int ret_for;
 
     ret_for = expand_pk(&(P1[i]), &(P2T[i]), i, para);
-    if (ret_for!=0){
-      ret_code = ret_for-40;
-#ifndef QRUOV_USE_MULTI_THREAD
-      goto end;
-#endif
-      goto end_for;
-    }
 
     ret_for = compute_Pi3_op2(&(P3[i]), &(P1[i]), &(P2T[i]), SdT, &Sd, para);
-    if (ret_for!=0){
-      ret_code = ret_for-130;
-#ifndef QRUOV_USE_MULTI_THREAD
-      goto end;
-#endif
-      goto end_for;
-    }
 
     end_for:
     i=i;  // dummy
@@ -456,14 +439,12 @@ int compute_P1_P2T_L_u_op2(FQL_MATRIX* P1, FQL_MATRIX* P2T, FQ_MATRIX* L, FQ_MAT
   }else{
     ret = AES_init((AES_CTX**)ctx);
   }
-  if (ret!=0) goto end;
 
   if (para->prg_shake==1){
     ret = SHAKE_update((SHAKE_CTX*)*ctx, pk_seed, para->seed_len);
   }else{
     ret = AES_update((AES_CTX*)*ctx, pk_seed, para->AES_len*8);
   }
-  if (ret!=0){ ret-=10; goto end; }
 
   int i;
 #ifdef QRUOV_USE_MULTI_THREAD
@@ -476,18 +457,14 @@ int compute_P1_P2T_L_u_op2(FQL_MATRIX* P1, FQL_MATRIX* P2T, FQ_MATRIX* L, FQ_MAT
     FQ_MATRIX ui = {.data = NULL};
 
     ret_for = Fq_matrix_init(&Li, para->m, 1);
-    if (ret_for!=0){ ret = ret_for-20; goto end_for; }
     Fq_matrix_clear(&Li);
 
     ret_for = Fq_matrix_init(&ui, 1, 1);
-    if (ret_for!=0){ ret = ret_for-30; goto end_for; }
     Fq_matrix_clear(&ui);
 
     ret_for = expand_pk(&(P1[i]), &(P2T[i]), i ,para);
-    if (ret_for!=0){ ret = ret_for-40; goto end_for; }
 
     ret_for = compute_Li_ui_op2(&Li, &ui, &(P1[i]), &(P2T[i]), SdT, y, para);
-    if (ret_for!=0){ ret = ret_for-130; goto end_for; }
 
     for(int j=0; j<para->m; j++){
       L->data[INDEX(i, j, L->col)] = Li.data[INDEX(j, 0, Li.col)];
@@ -499,11 +476,6 @@ int compute_P1_P2T_L_u_op2(FQL_MATRIX* P1, FQL_MATRIX* P2T, FQ_MATRIX* L, FQ_MAT
     Fq_matrix_free(&ui);
     Fq_matrix_clear(&Li);
     Fq_matrix_free(&Li);
-    if(ret!=0){
-#ifndef QRUOV_USE_MULTI_THREAD
-      goto end;
-#endif
-    }
   }
 
   end:
@@ -890,22 +862,17 @@ int keygen_op2(FQL_MATRIX* P3, const unsigned char* sk_seed, const unsigned char
   }
 
   ret = Fql_matrix_init(&SdT, para->V, para->M, 0, 1, para);
-  if (ret!=0){ FREE_KEYGEN(); return ret-0; }
 
   for (int i=0; i<para->m; i++){
     ret = Fql_matrix_init(&(P1[i]), para->V, para->V, 1, 0, para);
-    if (ret!=0){ FREE_KEYGEN(); return ret-10; }
 
     ret = Fql_matrix_init(&(P2T[i]), para->V, para->M, 0, 1, para);
-    if (ret!=0){ FREE_KEYGEN(); return ret-20; }
   }
 
   // compute SdT, P1, P2T, P3
   ret = compute_SdT(&SdT, sk_seed, para);
-  if (ret!=0){ FREE_KEYGEN(); return ret-30; }
 
   ret = compute_P1_P2T_P3_op2(P1, P2T, P3, &SdT, pk_seed, para);
-  if (ret!=0){ FREE_KEYGEN(); return ret-80; }
 
   // free
   FREE_KEYGEN();
@@ -1374,123 +1341,87 @@ int sign_op2(unsigned char* r, FQL_MATRIX* s, const unsigned char* M, const unsi
   FQL_MATRIX x_Fql = {.data = NULL};
 
   P = (int*)malloc(sizeof(int) * para->m);
-  if (P == NULL){
-#ifdef DEBUG
-    fprintf(stderr, "[sign] P malloc failed.\n");
-#endif
-    FREE_SIGN(); return -1;
-  }
   memset(P, 0, para->m);
 
   first_col_index = (int*)malloc(sizeof(int) * para->m);
-  if (first_col_index == NULL){
-#ifdef DEBUG
-    fprintf(stderr, "[sign] first_col_index malloc failed.\n");
-#endif
-    FREE_SIGN(); return -2;
-  }
   memset(first_col_index, 0, para->m);
 
   // init
   ret = Fql_matrix_init(&SdT, para->V, para->M, 0, 1, para);
-  if (ret!=0) return ret-10;
   Fql_matrix_clear(&SdT, para);
 
   for (int i=0; i<para->m; i++){
     ret = Fql_matrix_init(&(P1[i]), para->V, para->V, 1, 0, para);
-    if (ret!=0){ FREE_SIGN(); return ret-20; }
 
     ret = Fql_matrix_init(&(P2T[i]), para->V, para->M, 0, 1, para);
-    if (ret!=0){ FREE_SIGN(); return ret-30; }
 
     Fql_matrix_clear(&(P1[i]), para);
     Fql_matrix_clear(&(P2T[i]), para);
   }
 
   ret = Fq_matrix_init(&L, para->m, para->m);
-  if (ret!=0){ FREE_SIGN(); return ret-40; }
   Fq_matrix_clear(&L);
 
   ret = Fq_matrix_init(&u, para->m, 1);
-  if (ret!=0){ FREE_SIGN(); return ret-50; }
   Fq_matrix_clear(&u);
 
   ret = Fql_matrix_init(&y, para->V, 1, 0, 0, para);
-  if (ret!=0){ FREE_SIGN(); return ret-60; }
   Fql_matrix_clear(&y, para);
 
   // compute SdT, y
   ret = compute_SdT(&SdT, sk_seed, para);
-  if (ret!=0){ FREE_SIGN();  return ret-70; }
 
   ret = compute_y(&y, y_seed, para);
-  if (ret!=0){ FREE_SIGN();  return ret-120; }
 
   // compute P1, P2T, L, u
   ret = compute_P1_P2T_L_u_op2(P1, P2T, &L, &u, &SdT, &y, pk_seed, para);
-  if (ret!=0){ FREE_SIGN(); return ret-170; }
 
   // init
   ret = Fq_matrix_init(&t, para->m, 1);
-  if (ret!=0){ FREE_SIGN(); return ret-570; }
   Fq_matrix_clear(&t);
 
   ret = Fq_matrix_init(&LL, para->m, para->m);
-  if (ret!=0){ FREE_SIGN(); return ret-580; }
   Fq_matrix_clear(&LL);
 
   ret = Fq_matrix_init(&LU, para->m, para->m);
-  if (ret!=0){ FREE_SIGN(); return ret-590; }
   Fq_matrix_clear(&LU);
 
   ret = Fq_matrix_init(&L_inv, para->m, para->m);
-  if (ret!=0){ FREE_SIGN(); return ret-600; }
   Fq_matrix_clear(&L_inv);
 
   ret = Fq_matrix_init(&b, para->m, 1);
-  if (ret!=0){ FREE_SIGN(); return ret-610; }
   Fq_matrix_clear(&b);
 
   ret = Fq_matrix_init(&x_Fq, para->m, 1);
-  if (ret!=0){ FREE_SIGN(); return ret-620; }
   Fq_matrix_clear(&x_Fq);
 
   ret = Fql_matrix_init(&x_Fql, para->M, 1, 0, 0, para);
-  if (ret!=0){ FREE_SIGN(); return ret-630; }
   Fql_matrix_clear(&x_Fql, para);
 
   // compute mu
   ret = compute_mu(mu, M, Mlen, pk_seed, para);
-  if (ret!=0){ FREE_SIGN(); return ret-640; }
 
   // init r_ctx
   ret = r_ctx_init(&r_ctx, r_seed, para);
-  if (ret!=0){ FREE_SIGN(); return ret-680; }
 
   int is_consistent = 0;
   do{
     // compute r
     ret = compute_r(r_ctx, r, para);
-    if (ret!=0){ FREE_SIGN(); return ret-700; }
 
     // compute t, b
     ret = Hash(&t, mu, r, para);
-    if (ret!=0){ FREE_SIGN(); return ret-740; }
 
     ret = Fq_matrix_sub_op2(&b, &t, &u, para);
-    if (ret!=0){ FREE_SIGN(); return ret-780; }
 
     // solve
     ret = LU_decompose_op2(P, &LL, &LU, &rank, first_col_index, &L, para);
-    if (ret!=0){ FREE_SIGN(); return ret-790; }
 
     ret = consistent_op2(&is_consistent, &L_inv, &has_L_inv, P, &LL, rank, &b, para);
-    if (ret!=0){ FREE_SIGN(); return ret-810; }
   }while (!is_consistent);
 
   // sample a solution
   ret = sample_a_solution_op2(&x_Fq, P, &LL, &LU, rank, first_col_index, &b, x_seed, para);
-  if (ret!=0){ FREE_SIGN(); return ret-820; }
 
   for (int i=0; i<(x_Fql.size); i++){
     for (int j=0; j<para->l; j++){
@@ -1502,7 +1433,6 @@ int sign_op2(unsigned char* r, FQL_MATRIX* s, const unsigned char* M, const unsi
 
   // compute s
   ret = compute_s_op2(s, &y, &x_Fql, &SdT, para);  // 変数SdTは上で転置されているため、中身はSdに等しい
-  if (ret!=0){ FREE_SIGN(); return ret-860; }
 
   // free
   FREE_SIGN();
@@ -1686,36 +1616,28 @@ int verify_op2(const unsigned char* M, const unsigned long long Mlen, const unsi
 
   for (int i=0; i<para->m; i++){
     ret = Fql_matrix_init(&(P1[i]), para->V, para->V, 1, 0, para);
-    if (ret!=0){ FREE_VERIFY(); return ret-0; }
 
     ret = Fql_matrix_init(&(P2T[i]), para->V, para->M, 0, 1, para);
-    if (ret!=0){ FREE_VERIFY(); return ret-10; }
 
     Fql_matrix_clear(&(P1[i]), para);
     Fql_matrix_clear(&(P2T[i]), para);
   }
 
   ret = Fq_matrix_init(&t, para->m, 1);
-  if (ret!=0){ FREE_VERIFY(); return ret-20; }
   Fq_matrix_clear(&t);
 
   ret = Fq_matrix_init(&td, para->m, 1);
-  if (ret!=0){ FREE_VERIFY(); return ret-30; }
   Fq_matrix_clear(&td);
 
   // compute P1, P2T
   ret = compute_P1_P2T(P1, P2T, pk_seed, para);
-  if (ret!=0){ FREE_VERIFY(); return ret-40; }
 
   // compute mu, t, td
   ret = compute_mu(mu, M, Mlen, pk_seed, para);
-  if (ret!=0){ FREE_VERIFY(); return ret-150; }
 
   ret = Hash(&t, mu, r, para);
-  if (ret!=0){ FREE_VERIFY(); return ret-190; }
 
   ret = compute_td_op2(&td, s, P1, P2T, P3, para);
-  if (ret!=0){ FREE_VERIFY(); return ret-230; }
 
   for (int i=0; i<(t.size); i++){
     if (t.data[i] != td.data[i]){

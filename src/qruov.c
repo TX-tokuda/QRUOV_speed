@@ -569,42 +569,7 @@ end:
  */
 int QRUOV_keygen_op2(unsigned char* pk, size_t* pklen, unsigned char* sk,
                     size_t* sklen, QRUOV_params* para){
-                  
-  if (para==NULL){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_keygen_gn] para must not be NULL.\n");
-#endif
-    // 他のチェックで使用するので先にチェックするがエラーコードは引数の順とする
-    return -5;
-  }
-                  
-  if (pk==NULL){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_keygen_gn] pk must not be NULL.\n");
-#endif
-    return -1;
-  }
-
-  if (*pklen < para->pk_len){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_keygen_gn] pklen must be >= para->pk_len.\n");
-#endif
-    return -2;
-  }
-
-  if (sk==NULL){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_keygen_gn] sk must not be NULL.\n");
-#endif
-    return -3;
-  }
-
-  if (*sklen < para->sk_len){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_keygen_gn] sklen must be >= para->sk_len.\n");
-#endif
-    return -4;
-  }
+                
 
   // init
   int ret_code = 0, ret = 0;
@@ -619,13 +584,9 @@ int QRUOV_keygen_op2(unsigned char* pk, size_t* pklen, unsigned char* sk,
   }
 
   ret = string_init(&sk_seed, para->seed_len);
-  if (ret!=0){ ret_code = ret-100; goto end; }
   ret = string_init(&pk_seed, para->seed_len);
-  if (ret!=0){ ret_code = ret-110; goto end; }
   ret = string_init(&tmp_sk, para->sk_len);
-  if (ret!=0){ ret_code = ret-120; goto end; }
   ret = string_init(&tmp_pk, para->pk_len);
-  if (ret!=0){ ret_code = ret-130; goto end; }
 
   byte_random_private(sk_seed, para->seed_len);
   byte_random(pk_seed, para->seed_len);
@@ -634,26 +595,21 @@ int QRUOV_keygen_op2(unsigned char* pk, size_t* pklen, unsigned char* sk,
 
   for (int i=0; i<para->m; i++){
     ret = Fql_matrix_init(&(P3[i]), para->M, para->M, 1, 0, para);
-    if (ret!=0){ ret_code = ret-140; goto end; }
     Fql_matrix_clear(&(P3[i]), para);
   }
 
   // keygen
   ret = keygen_op2(P3, sk_seed, pk_seed, para);
-  if (ret!=0){ ret_code = ret-150; goto end; }
 
   // DER encode
   ret = sk2der(tmp_sk, sk_seed, pk_seed, para);
-  if (ret!=0){ ret_code = ret-540; goto end; }
   ret = pk2der(tmp_pk, pk_seed, P3, para);
-  if (ret!=0){ ret_code = ret-600; goto end; }
 
   memcpy(sk, tmp_sk, para->sk_len);
   memcpy(pk, tmp_pk, para->pk_len);
   *sklen = para->sk_len;
   *pklen = para->pk_len;
 
-end:
   // free
   for (int i=0; i<para->m; i++){
     Fql_matrix_free(&(P3[i]));
@@ -960,49 +916,6 @@ int QRUOV_sign_op2(unsigned char* sk, size_t sklen, unsigned char* sig,
                   size_t* siglen, unsigned char* m, size_t mlen,
                   QRUOV_params* para){
 
-  if (para==NULL){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_sign_gn] para must not be NULL.\n");
-#endif
-    // 他のチェックで使用するので先にチェックするがエラーコードは引数の順とする
-    return -6;
-  }
-
-  if (sk==NULL){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_sign_gn] sk must not be NULL.\n");
-#endif
-    return -1;
-  }
-
-  if (sklen != para->sk_len){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_sign_gn] sklen must be == para->sk_len.\n");
-#endif
-    return -2;
-  }
-
-  if (sig==NULL){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_sign_gn] sig must not be NULL.\n");
-#endif
-    return -3;
-  }
-
-  if (*siglen < para->sigma_len){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_sign_gn] siglen must be >= para->sigma_len.\n");
-#endif
-    return -4;
-  }
-
-  if (m==NULL){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_sign_gn] m must not be NULL.\n");
-#endif
-    return -5;
-  }
-
   // init
   int ret_code = 0, ret = 0;
   unsigned char* sk_seed = NULL;
@@ -1015,19 +928,12 @@ int QRUOV_sign_op2(unsigned char* sk, size_t sklen, unsigned char* sig,
   FQL_MATRIX s = {.data = NULL};
 
   ret = string_init(&sk_seed, para->seed_len);
-  if (ret!=0){ ret_code = ret-100; goto end; };
   ret = string_init(&pk_seed, para->seed_len);
-  if (ret!=0){ ret_code = ret-110; goto end; };
   ret = string_init(&r_seed, para->seed_len);
-  if (ret!=0){ ret_code = ret-120; goto end; };
   ret = string_init(&y_seed, para->seed_len);
-  if (ret!=0){ ret_code = ret-130; goto end; };
   ret = string_init(&x_seed, para->seed_len);
-  if (ret!=0){ ret_code = ret-140; goto end; };
   ret = string_init(&r, para->salt_len);
-  if (ret!=0){ ret_code = ret-150; goto end; };
   ret = string_init(&tmp_sig, para->sigma_len);
-  if (ret!=0){ ret_code = ret-160; goto end; };
 
   memset(sk_seed, 0, para->seed_len);
   memset(pk_seed, 0, para->seed_len);
@@ -1038,25 +944,20 @@ int QRUOV_sign_op2(unsigned char* sk, size_t sklen, unsigned char* sig,
   memset(tmp_sig, 0, para->sigma_len);
 
   ret = Fql_matrix_init(&s, para->N, 1, 0, 0, para);
-  if (ret!=0){ ret_code = ret-170; goto end; };
   Fql_matrix_clear(&s, para);
 
   // DER decode
   ret = der2sk(sk_seed, pk_seed, sk, para);
-  if (ret!=0){ ret_code = ret-290; goto end; };
 
   // sign
   ret = sign_op2(r, &s, m, mlen, sk_seed, pk_seed, r_seed, y_seed, x_seed, para);
-  if (ret!=0){ ret_code = ret-360; goto end; };
 
   // DER encode
   ret = sigma2der(tmp_sig, r, &s, para);
-  if (ret!=0){ ret_code = ret-1290; goto end; };
 
   memcpy(sig, tmp_sig, para->sigma_len);
   *siglen = para->sigma_len;
 
-end:
   // free
   Fql_matrix_clear(&s, para);
   Fql_matrix_free(&s);
@@ -1321,48 +1222,6 @@ int QRUOV_verify_op2(unsigned char* pk, size_t pklen, unsigned char* sig,
                     size_t siglen, unsigned char* m, size_t mlen,
                     QRUOV_params* para){
 
-  if (para==NULL){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_verify_gn] para must not be NULL.\n");
-#endif
-    // 他のチェックで使用するので先にチェックするがエラーコードは引数の順とする
-    return -6;
-  }
-
-  if (pk==NULL){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_verify_gn] pk must not be NULL.\n");
-#endif
-    return -1;
-  }
-
-  if (pklen != para->pk_len){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_verify_gn] pklen must be == para->pk_len.\n");
-#endif
-    return -2;
-  }
-
-  if (sig==NULL){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_verify_gn] sig must not be NULL.\n");
-#endif
-    return -3;
-  }
-
-  if (siglen != para->sigma_len){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_verify_gn] siglen must be == para->sigma_len.\n");
-#endif
-    return -4;
-  }
-
-  if (m==NULL){
-#ifdef DEBUG
-    fprintf(stderr, "[QRUOV_verify_gn] m must not be NULL.\n");
-#endif
-    return -5;
-  }
 
   // init
   int ret_code = 0, ret = 0;
@@ -1375,27 +1234,21 @@ int QRUOV_verify_op2(unsigned char* pk, size_t pklen, unsigned char* sig,
   FQL_MATRIX s = {.data = NULL};
 
   ret = string_init(&pk_seed, para->seed_len);
-  if (ret!=0){ ret_code = ret-100; goto end; };
   ret = string_init(&r, para->salt_len);
-  if (ret!=0){ ret_code = ret-110; goto end; };
 
   memset(pk_seed, 0, para->seed_len);
   memset(r, 0, para->salt_len);
 
   for (int i=0; i<para->m; i++){
     ret = Fql_matrix_init(&(P3[i]), para->M, para->M, 1, 0, para);
-    if (ret!=0){ ret_code = ret-120; goto end; };
     Fql_matrix_clear(&(P3[i]), para);
   }
   ret = Fql_matrix_init(&s, para->N, 1, 0, 0, para);
-  if (ret!=0){ ret_code = ret-240; goto end; };
   Fql_matrix_clear(&s, para);
 
   // DER decode
   ret = der2pk(pk_seed, P3, pk, para);
-  if (ret!=0){ ret_code = ret-380; goto end; };
   ret = der2sigma(r, &s, sig, para);
-  if (ret!=0){ ret_code = ret-450; goto end; };
 
   ret = verify_op2(m, mlen, pk_seed, P3, r, &s, para);
   if (ret!=0 && ret!=1){

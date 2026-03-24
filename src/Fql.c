@@ -277,12 +277,6 @@ int Fql_accumulator_reduce_op2(Fq* r, const Fq* a, const QRUOV_params* para){
 
   int* tmp = NULL;
   tmp = (int*)malloc(sizeof(int) * (para->Fql_accumulator_degree+1));
-  if (tmp == NULL){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_accumulator_reduce] malloc failed.\n");
-#endif
-    return -1;
-  }
 
   for (int i=0; i<5; i++){
     tmp[i] = a[i];

@@ -120,19 +120,6 @@ int Fq_matrix_sub(FQ_MATRIX* R, const FQ_MATRIX* A, const FQ_MATRIX* B, const QR
 
 int Fq_matrix_sub_op2(FQ_MATRIX* R, const FQ_MATRIX* A, const FQ_MATRIX* B, const QRUOV_params* para){
 
-  if (! ((R->row)==(A->row) && (A->row)==(B->row)) ){
-#ifdef DEBUG
-    fprintf(stderr, "[Fq_matrix_sub] R->row, A->row, B->row must be equal.\n");
-#endif
-    return -1;
-  }
-  if (! ((R->col)==(A->col) && (A->col)==(B->col)) ){
-#ifdef DEBUG
-    fprintf(stderr, "[Fq_matrix_sub] R->col, A->col, B->col must be equal.\n");
-#endif
-    return -2;
-  }
-
   int i;
 #ifdef QRUOV_USE_MULTI_THREAD
   #pragma omp parallel for private(i) shared(A, B, R, para)
@@ -519,31 +506,6 @@ int Fql_matrix_copy_op(FQL_MATRIX_OP* R, const FQL_MATRIX_OP* A){
 
 int Fql_matrix_copy_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const QRUOV_params* para){
 
-  if ((R->row)!=(A->row)){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_copy] R->row must be == A->row.\n");
-#endif
-    return -1;
-  }
-  if ((R->col)!=(A->col)){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_copy] R->col must be == A->col.\n");
-#endif
-    return -2;
-  }
-  if ((R->symmetric)!=(A->symmetric)){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_copy] R->symmetric must be == A->symmetric.\n");
-#endif
-    return -3;
-  }
-  if ((R->transpose)!=(A->transpose)){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_copy] R->transpose must be == A->transpose.\n");
-#endif
-    return -4;
-  }
-
   for (int i=0; i<(R->size); i++){
     Fql_copy_op2(R->data[i], A->data[i], para);
   }
@@ -691,23 +653,6 @@ int Fql_matrix_add_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
   int A_col = (A->transpose) ? (A->row) : (A->col);
   int B_row = (B->transpose) ? (B->col) : (B->row);
   int B_col = (B->transpose) ? (B->row) : (B->col);
-
-  if (! ((R_row)==(A_row) && (A_row)==(B_row)) ){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_add] R->row (or transposed R->col), "
-                    "A->row (or transposed A->col), B->row (or transposed B->col) "
-                    "must be equal.\n");
-#endif
-    return -1;
-  }
-  if (! ((R_col)==(A_col) && (A_col)==(B_col)) ){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_add] R->col (or transposed R->row), "
-                    "A->col (or transposed A->row), B->col (or transposed B->row) "
-                    "must be equal.\n");
-#endif
-    return -2;
-  }
  
   int i, j = 0;
 #ifdef QRUOV_USE_MULTI_THREAD
@@ -891,23 +836,6 @@ int Fql_matrix_sub_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
   int A_col = (A->transpose) ? (A->row) : (A->col);
   int B_row = (B->transpose) ? (B->col) : (B->row);
   int B_col = (B->transpose) ? (B->row) : (B->col);
-
-  if (! ((R_row)==(A_row) && (A_row)==(B_row)) ){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_sub] R->row (or transposed R->col), "
-                    "A->row (or transposed A->col), B->row (or transposed B->col) "
-                    "must be equal.\n");
-#endif
-    return -1;
-  }
-  if (! ((R_col)==(A_col) && (A_col)==(B_col)) ){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_sub] R->col (or transposed R->row), "
-                    "A->col (or transposed A->row), B->col (or transposed B->row) "
-                    "must be equal.\n");
-#endif
-    return -2;
-  }
 
   int i, j = 0;
 #ifdef QRUOV_USE_MULTI_THREAD
@@ -1159,32 +1087,6 @@ int Fql_matrix_mul_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
   int row_2 = (B->transpose) ? (B->col) : (B->row);
   int col_2 = (B->transpose) ? (B->row) : (B->col);
 
-  if (col_1!=row_2){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul] A->col (or transposed A->row) "
-                    "must be == B->row (or transposed B->col).\n");
-#endif
-    return -1;
-  }
-  if ((R->row)!=row_1){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul] R->row must be == A->row (or transposed A->col).\n");
-#endif
-    return -2;
-  }
-  if ((R->col)!=col_2){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul] R->col must be == B->col (or transposed B->row).\n");
-#endif
-    return -3;
-  }
-  if (R->transpose){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul] R must not be transpose.\n");
-#endif
-    return -4;
-  }
-
   int len = col_1;
 
   int i, j, k;
@@ -1198,13 +1100,6 @@ int Fql_matrix_mul_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
 
       Fq* r = NULL;
       ret_for = Fql_accumulator_init(&r, para);
-      if (ret_for!=0){
-        ret = ret_for-10;
-#ifndef QRUOV_USE_MULTI_THREAD
-        return ret;
-#endif
-        goto end_for;
-      }
       Fql_accumulator_zero(r, para);
 
       int index_r;
@@ -1235,14 +1130,6 @@ int Fql_matrix_mul_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
 
         Fq* c = NULL;
         ret_for = Fql_accumulator_init(&c, para);
-        if (ret_for!=0){
-          ret = ret_for-20;
-	  Fql_accumulator_free(&r);
-#ifndef QRUOV_USE_MULTI_THREAD
-          return ret;
-#endif
-          goto end_for;
-        }
         Fql_accumulator_zero(c, para);
 
         Fql_mul_op2(c, A->data[index_a], B->data[index_b], para);
@@ -1251,14 +1138,6 @@ int Fql_matrix_mul_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX* B,
       }
 
       ret_for = Fql_accumulator_reduce(R->data[index_r], r, para);
-        if (ret_for!=0){
-          ret = ret_for-30;
-          Fql_accumulator_free(&r);
-#ifndef QRUOV_USE_MULTI_THREAD
-          return ret;
-#endif
-          goto end_for;
-        }
       Fql_accumulator_free(&r);
     }
     end_for: // for multi thread
@@ -1521,40 +1400,6 @@ int Fql_matrix_mul_add_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX*
   int row_2 = (B->transpose) ? (B->col) : (B->row);
   int col_2 = (B->transpose) ? (B->row) : (B->col);
 
-  if (col_1!=row_2){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul_add] A->col (or transposed A->row) "
-                    "must be == B->row (or transposed B->col).\n");
-#endif
-    return -1;
-  }
-  if (! ((R->row)==row_1 && row_1==(C->row)) ){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul_add] R->row, A->row (or transposed A->col), C->row "
-                    "must be equal.\n");
-#endif
-    return -2;
-  }
-  if (! ((R->col)==col_2 && col_2==(C->col)) ){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul_add] R->col, B->col (or transposed B->row), C->col "
-                    "must be equal.\n");
-#endif
-    return -3;
-  }
-  if (R->transpose){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul_add] R must not be transpose.\n");
-#endif
-    return -4;
-  }
-  if (C->transpose){
-#ifdef DEBUG
-    fprintf(stderr, "[Fql_matrix_mul_add] C must not be transpose.\n");
-#endif
-    return -5;
-  }
-
   int len = col_1;
 
   int i, j, k;
@@ -1568,13 +1413,6 @@ int Fql_matrix_mul_add_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX*
 
       Fq* r = NULL;
       ret_for = Fql_accumulator_init(&r, para);
-      if (ret_for!=0){
-        ret = ret_for-10;
-#ifndef QRUOV_USE_MULTI_THREAD
-        return ret;
-#endif
-        goto end_for;
-      }
       Fql_accumulator_zero(r, para);
 
       int index_r, index_c;
@@ -1608,14 +1446,6 @@ int Fql_matrix_mul_add_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX*
 
         Fq* c = NULL;
         ret_for = Fql_accumulator_init(&c, para);
-        if (ret_for!=0){
-          ret = ret_for-20;
-	  Fql_accumulator_free(&r);
-#ifndef QRUOV_USE_MULTI_THREAD
-          return ret;
-#endif
-          goto end_for;
-        }
         Fql_accumulator_zero(c, para);
 
         Fql_mul_op2(c, A->data[index_a], B->data[index_b], para);
@@ -1625,26 +1455,9 @@ int Fql_matrix_mul_add_op2(FQL_MATRIX* R, const FQL_MATRIX* A, const FQL_MATRIX*
 
       Fq* s = NULL;
       ret_for = Fql_init(&s, para);
-      if (ret_for!=0){
-        ret = ret_for-30;
-        Fql_accumulator_free(&r);
-#ifndef QRUOV_USE_MULTI_THREAD
-        return ret;
-#endif
-        goto end_for;
-      }
       Fql_zero(s, para);
 
       ret_for = Fql_accumulator_reduce_op2(s, r, para);
-      if (ret_for!=0){
-        ret = ret_for-40;
-        Fql_accumulator_free(&r);
-        Fql_free(&s);
-#ifndef QRUOV_USE_MULTI_THREAD
-        return ret;
-#endif
-        goto end_for;
-      }
 
       Fql_add_op2(s, s, C->data[index_c], para);
       Fql_copy_op2(R->data[index_r], s, para);
@@ -1681,19 +1494,6 @@ int Fql_index_permute(int* index_a, const int index_aW, const QRUOV_params* para
 
 int Fql_index_permute_op2(int* index_a, const int index_aW, const QRUOV_params* para){
 
-  if (index_aW<0){
-#ifdef DEBUG
-  fprintf(stderr, "[Fql_index_permute] index_aW must be >= 0.\n");
-#endif
-    return -1;
-  }
-
-  if (index_aW>=3){
-#ifdef DEBUG
-  fprintf(stderr, "[Fql_index_permute] index_aW must be < para->l.\n");
-#endif
-    return -2;
-  }
   //*index_a = (3 + 1 - 1 - index_aW) % 3; 
   *index_a = (3 - index_aW) % 3; 
 
