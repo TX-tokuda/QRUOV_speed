@@ -5,7 +5,7 @@ OPENSSL_INC=/usr/local/include
 OPENSSL_LIB=/usr/local/lib64
 
 # DEBUG=true
-USE_MULTI_THREAD=true
+# USE_MULTI_THREAD=true
 #USE_MULTI_THREAD=false
 
 CC=gcc

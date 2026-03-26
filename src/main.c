@@ -3,6 +3,7 @@
  * @brief main関数を実装したソースファイル。
  * @copyright Copyright (c) 2025 NTT TechnoCross Corporation
  */
+#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <string.h>
@@ -12,8 +13,8 @@
 #include "qruov.h"
 #include <time.h>
 
-#define BENCH_ITERS 1000
-#define WORMUP_ITERS 100
+#define BENCH_ITERS 3000
+#define WORMUP_ITERS 10
 
 static double timespec_diff_sec(const struct timespec *start, const struct timespec *end) {
     return (double)(end->tv_sec - start->tv_sec)
