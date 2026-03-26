@@ -12,7 +12,17 @@
 #include "qruov.h"
 #include <time.h>
 
+#define BENCH_ITERS 1000
+#define WORMUP_ITERS 100
+
+static double timespec_diff_sec(const struct timespec *start, const struct timespec *end) {
+    return (double)(end->tv_sec - start->tv_sec)
+         + (double)(end->tv_nsec - start->tv_nsec) / 1e9;
+}
+
 int main(){
+  struct timespec start, end;
+  double keygen_time, sign_time, verify_time;
 
   int ret = 0;
 
@@ -61,27 +71,21 @@ int main(){
   memset(pk, 0, para.pk_len);
   memset(sk, 0, para.sk_len);
 
-  // keygen 100回計測
-  clock_t start = clock();
-  for (int i = 0; i < 100; i++) {
-      ret = QRUOV_keygen(pk, &pklen, sk, &sklen, &para);
-      if (ret != 0) printf("QRUOV_keygen returned %d.\n", ret);
-  }
-  clock_t end = clock();
-  double keygen_time = (double)(end - start) / CLOCKS_PER_SEC;
-  printf("QRUOV_keygen 100回の合計時間: %f 秒\n", keygen_time);
+    // ウォームアップ
+    for (int i = 0; i < WORMUP_ITERS; i++) {
+        ret = QRUOV_keygen(pk, &pklen, sk, &sklen, &para);
+    }
 
-  //ret = QRUOV_keygen(pk, &pklen, sk, &sklen, &para);
-  //if (ret!=0) printf("QRUOV_keygen returned %d.\n", ret);
+    // keygen 計測
+    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+    for (int i = 0; i < BENCH_ITERS; i++) {
+        ret = QRUOV_keygen(pk, &pklen, sk, &sklen, &para);
+    }
+    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+    keygen_time = timespec_diff_sec(&start, &end);
+    printf("QRUOV_keygen %d回の合計時間: %.9f 秒\n", BENCH_ITERS, keygen_time);
+    printf("QRUOV_keygen 1回あたり: %.9f 秒\n", keygen_time / BENCH_ITERS);
 
-  //for (int i=0; i<para.pk_len; i++){
-  //  printf("%02x", pk[i]);
-  //}
-  //printf("\n");
-  //for (int i=0; i<para.sk_len; i++){
-  //  printf("%02x", sk[i]);
-  //}
-  //printf("\n");
 
   // sign
   size_t siglen = para.sigma_len;
@@ -91,36 +95,38 @@ int main(){
   unsigned char* m = (unsigned char*)"hello world!";
   size_t mlen = 12;
 
-  //ret = QRUOV_sign(sk, para.sk_len, sig, &siglen, m, mlen, &para);
-  //if (ret!=0) printf("QRUOV_sign returned %d.\n", ret);
+    // ウォームアップ
+    for (int i = 0; i < WORMUP_ITERS; i++) {
+        ret = QRUOV_sign(sk, para.sk_len, sig, &siglen, m, mlen, &para);
+    }
 
-  start = clock();
-  for (int i = 0; i < 100; i++) {
-      ret = QRUOV_sign(sk, para.sk_len, sig, &siglen, m, mlen, &para);
-      if (ret != 0) printf("QRUOV_sign returned %d.\n", ret);
-  }
-  end = clock();
-  double sign_time = (double)(end - start) / CLOCKS_PER_SEC;
-  printf("QRUOV_sign 100回の合計時間: %f 秒\n", sign_time);
+    //sign 計測
+    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+    for (int i = 0; i < BENCH_ITERS; i++) {
+        ret = QRUOV_sign(sk, para.sk_len, sig, &siglen, m, mlen, &para);
+    }
+    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+    sign_time = timespec_diff_sec(&start, &end);
+    printf("QRUOV_sign %d回の合計時間: %.9f 秒\n", BENCH_ITERS, sign_time);
+    printf("QRUOV_sign 1回あたり: %.9f 秒\n", sign_time / BENCH_ITERS);
 
-  //for (int i=0; i<para.sigma_len; i++){
-  //  printf("%02x", sig[i]);
-  //}
-  //printf("\n");
 
-  // verify
-  //ret = QRUOV_verify(pk, para.pk_len, sig, para.sigma_len, m, mlen, &para);
-  //if (ret!=0 && ret!=1) printf("QRUOV_verify returned %d.\n", ret);
+    // ウォームアップ
+    for (int i = 0; i < WORMUP_ITERS; i++) {
+        ret = QRUOV_verify(pk, para.pk_len, sig, para.sigma_len, m, mlen, &para);
+    }
 
-  // verify 100回計測
-  start = clock();
-  for (int i = 0; i < 100; i++) {
-      ret = QRUOV_verify(pk, para.pk_len, sig, para.sigma_len, m, mlen, &para);
-      if (ret != 0 && ret != 1) printf("QRUOV_verify returned %d.\n", ret);
-  }
-  end = clock();
-  double verify_time = (double)(end - start) / CLOCKS_PER_SEC;
-  printf("QRUOV_verify 100回の合計時間: %f 秒\n", verify_time);
+  // verify 計測
+    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+    for (int i = 0; i < BENCH_ITERS; i++) {
+        ret = QRUOV_verify(pk, para.pk_len, sig, para.sigma_len, m, mlen, &para);
+    }
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+    verify_time = timespec_diff_sec(&start, &end);
+    printf("QRUOV_verify %d回の合計時間: %.9f 秒\n", BENCH_ITERS, verify_time);
+    printf("QRUOV_verify 1回あたり: %.9f 秒\n", verify_time / BENCH_ITERS);
+
 
   if (ret==0) printf("signature is rejected.\n");
   else if (ret==1) printf("signature is accepted.\n");
